@@ -6,7 +6,7 @@ http://www.amxmod.net/forum/showthread.php?tid=1522
 Muhaha! Do you really think I'll put that?!
 
 #### Notes & reminder:
-This version is my own version, not a port of the AMXX's one!
+This version is my own version, not a port of the AMX Mod X's one!
 So feel free to read & learn about its features, including some exclusives that will be in the future AMX Mod version(s).
 
 Ask questions & help on the official topic (link above), not here (issues & pull requests) or elsewhere huh! This will not be considered.
