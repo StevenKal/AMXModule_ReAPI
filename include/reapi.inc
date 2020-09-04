@@ -135,12 +135,12 @@ native ReAPI_CFT:ReAPI_FC_GetCallFunctionTypeID(ReAPI_CFGT:iCallFunctionGroupTyp
  *       return
  *
  *     new pEngineClientHandle
- *     if(!ReAPI_FC_CallFunctionByTypeID(iFuncTypeID_RHSVS_GetClient_t, 0, iClientID, &pEngineClientHandle)) // Something goes wrong, maybe invalid client ID passed (like 54).
+ *     if(!ReAPI_FC_CallFunctionByTypeID(iFuncTypeID_RHSVS_GetClient_t, 0, iClientID, pEngineClientHandle)) // Something goes wrong, maybe invalid client ID passed (like 54).
  *       return
  *
  *   Second (by type name):
  *     new iInventoryItemEntityID = -1
- *     if(!ReAPI_FC_CallFunctionByTypeName(ReAPI_CFGT_RGCS_CCSPlayer, "GetItemById", 0, iClientID, CSW_HEGRENADE, &iInventoryItemEntityID) || iInventoryItemEntityID <= -1)
+ *     if(!ReAPI_FC_CallFunctionByTypeName(ReAPI_CFGT_RGCS_CCSPlayer, "GetItemById", 0, iClientID, CSW_HEGRENADE, iInventoryItemEntityID) || iInventoryItemEntityID <= -1)
  *       return
  *
  *   Third (by type name):
