@@ -1021,7 +1021,7 @@ enum ReAPI_CFT {
 	 * Format (usage): (..., const szInventoryItemTypeName[], &pWeaponInfoStructHandle).
 	 * Return type: Pointer in the "pWeaponInfoStructHandle" variable.
 	 * API required (ReGameDLL_CS): v2.1.
-	 * Description: Get the value of a weapon information structure for a specific inventory item type (via name). */
+	 * Description: Get the value of a weapon information structure (WeaponInfoStruct) for a specific inventory item type (via name). */
 
 	/* Function name (API): "GetWeaponSlot_ID".
 	 * Function name (real): "WeaponSlotInfo::GetWeaponSlot".
@@ -1162,7 +1162,7 @@ enum ReAPI_CFT {
 	 *   Note: The "iRewardType" parameter is a "RT_*" from "reapi_const.inc" (above).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v4.2.
-	 * Description: Add/Remove account (money) to a client. */
+	 * Description: Add/Remove account (money) to/from a client. */
 
 	/* Function name (API): "ClientCommand".
 	 * Function name (real): "CCSPlayer::ClientCommand".
