@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.3.0 (API AMX v2010.1).
+ * Version: 1.4.0 (API AMX v2010.1).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -887,6 +887,14 @@ enum ReAPI_CFT {
 	 * Description: Check the value of the client's "connected" member in the engine's "client" structure.
 	 * Information: This checks if a client is connected. */
 
+	/* Function name (API): "IsProxy".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsProxy).
+	 * Return type: Boolean in the "bIsProxy" variable.
+	 * API required (ReHLDS): v3.8.
+	 * Description: Check the value of the client's "proxy" member in the engine's "client" structure.
+	 * Information: This checks if a client is a proxy. */
+
 	/* Function name (API): "IsSpawned".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., iClientID, &bool:bIsSpawned).
@@ -917,6 +925,14 @@ enum ReAPI_CFT {
 	 * Return type: None.
 	 * API required (ReHLDS): v2.5.
 	 * Description: Set the value of the client's "m_lastvoicetime" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetProxy".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bProxy).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.8.
+	 * Description: Set the value of the client's "proxy" member in the engine's "client" structure.
+	 * Information: This sets if a client is a proxy. */
 
 	/* Function name (API): "SetSpawned".
 	 * Function name (real): None (this sets the value of a variable).
@@ -1201,7 +1217,7 @@ enum ReAPI_CFT {
 	 * Format (usage): (..., iClientID).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
-	 * Description: Make a client "disappears" (used for a VIP which reach the goal). */
+	 * Description: Make a client "disappears" (used for a VIP who reaches the goal). */
 
 	/* Function name (API): "DropPlayerItem".
 	 * Function name (real): "CCSPlayer::DropPlayerItem".
@@ -2243,6 +2259,13 @@ enum ReAPI_HFT {
 	 *   Called when the some informations about the server are send to the client.
 	 *   This is the function that prints the "BUILD * SERVER (* CRC)" etc., to the client's console. */
 
+	/* Function name (API): "SV_ShouldSendConsistencyList".
+	 * Function name (real): "SV_ShouldSendConsistencyList_mod". It is a custom function specific to ReHLDS.
+	 * Format (callback): (iClientID, bool:bForceConsistency).
+	 * Return type: Boolean.
+	 * API required (ReHLDS): v3.8.
+	 * Description: Called when the consistency list should be send to a client. */
+
 	/* Function name (API): "SV_Spawn_f".
 	 * Function name (real): "SV_Spawn_f".
 	 * Format (callback): ().
@@ -2312,7 +2335,7 @@ enum ReAPI_HFT {
 
 
 	/**************************************************************************
-	*                  HOOK FUNCTIONS -> GAME (ReGameDLL_CS)                  *
+	*               HOOK FUNCTIONS -> GAME -> CS (ReGameDLL_CS)               *
 	**************************************************************************/
 
 	/*************************** STANDARD -> Menu ****************************/
@@ -3249,7 +3272,7 @@ enum ReAPI_HFT {
 
 
 	/**************************************************************************
-	*                       HOOK FUNCTIONS -> ReChecker                       *
+	*             HOOK FUNCTIONS -> Metamod's module -> ReChecker             *
 	**************************************************************************/
 
 	/* Function name (API): "CmdExec".
