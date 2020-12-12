@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.4.0 (API AMX v2010.1).
+ * Version: 1.5.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -11,7 +11,7 @@
  * with the "Re" prefix) have been temporary put in this include file for      *
  * some reasons, but keep in mind in the future AMX Mod version they will be   *
  * moved elsewhere. Mainly because this is better to centralize them elsewhere.*
- * Also, I've not added all the ones you may need,                             *
+ * Also, I have not added all the ones you may need,                           *
  * but only the "most interesting", so, in other terms, only a few.            *
  *                                                                             *
  ******************************************************************************/
@@ -78,8 +78,8 @@ enum resourcetype {
 #define PLAYER_PREVENT_CLIMB    (1<<5) /* The player can not climb ladder. */
 
 /* Damage constant. */
-#if !defined DMG_GRENADE
-	#define DMG_GRENADE (1<<24) /* Damage of an HE grenade. */
+#if !defined DMG_EXPLOSION
+	#define DMG_EXPLOSION (1<<24) /* Damage type of an HE grenade. */
 #endif
 
 /* Hit box group. */
@@ -348,7 +348,7 @@ enum ReAPI_CFT {
 	 *   All the other possible parameters (when present), must be added at the suite and respected (their number, type, etc.) to avoid malfunction or server crash.
 	 *   Also, I've take the freedom to change some formats for a simplied usage with AMX functions (natives, forwards).
 	 *   For example functions which originally need a ReHLDS's IGameClient pointer will now need an entity ID (in the 1<->maxclients range).
-	 *   But this is similar to the entities-specific functions, where they originally need an edict/CBase pointer but AMX just need an ID.
+	 *   But this is similar to the entities-specific functions, where they originally need an edict/CBaseEntity pointer but AMX just need an ID.
 	 *
 	 *   About the return types, when a function returns an entity's ID, the natives allowing you to control the return values will return an ID usable for AMX functions (-1 for an invalid entity), rather than an entity's pointer.
 	 *   Also, for functions that return a pointer, take care, sometimes, some may return the value of a variable/array address (for C++ formats which return "&<variable>"), or sometimes its value, but I've specified this detail in the descriptions.
@@ -2537,6 +2537,40 @@ enum ReAPI_HFT {
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when the sequence informations of an entity are reset. */
+
+
+	/************************* CLASS -> CBaseEntity **************************/
+
+	/* Function name (API): "CBaseEntity::FireBuckshots".
+	 * Function name (real): "CBaseEntity::FireBuckshots". It is a custom function specific to ReGameDLL_CS.
+	 * Format (callback): (iEntityID, iShotsNum, const Float:vSource[3], const Float:vDirection[3], const Float:vSpread[3], Float:flDistance, iTracerFrequency, iDamage, iAttackerID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.19.
+	 * Description: Called when an entity shoots "buck shots" (pellets).
+	 * Informations:
+	 *   This is called by a client (the "iEntityID" variable will be the shooter client) and only when he shoots with a shotgun (M3/XM1014).
+	 *   This is a main function which handles "after shoot effects" (traces, decals, number of pellets to shoot, tracers, damage...).
+	 *   This version is a slighly modified version of the "CBaseEntity::FireBullets" function, but just readapted for shotguns. */
+
+	/* Function name (API): "CBaseEntity::FireBullets".
+	 * Function name (real): "CBaseEntity::FireBullets".
+	 * Format (callback): (iEntityID, iShotsNum, const Float:vSource[3], const Float:vDirection[3], const Float:vSpread[3], Float:flDistance, iBulletType, iTracerFrequency, iDamage, iAttackerID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.19.
+	 * Description: Called when an entity shoots standard bullets.
+	 * Informations:
+	 *   This is only called by the mounted gun entities (class name: "func_tank"), but on the standard CS this is also called when a client shoots with a shotgun.
+	 *   This is a main function which handles "after shoot effects" (traces, decals, number of pellets to shoot, tracers, damage...). */
+
+	/* Function name (API): "CBaseEntity::FireBullets3".
+	 * Function name (real): "CBaseEntity::FireBullets3".
+	 * Format (callback): (iEntityID, const Float:vSource[3], const Float:vDirection[3], Float:flSpread, Float:flDistance, iPenetrationNum, iBulletType, iDamage, Float:flRangeModifier, iAttackerID, bool:bPistol, iSharedRandom).
+	 * Return type: Vector.
+	 * API required (ReGameDLL_CS): v5.19.
+	 * Description: Called when an entity shoots standard bullets.
+	 * Informations:
+	 *   This is only called by a client and for all the clients's weapons, except for the shotguns.
+	 *   This is a main function which handles "after shoot effects" (traces, penetration power, bullet type, damage...). */
 
 
 	/************************* CLASS -> CBasePlayer **************************/
