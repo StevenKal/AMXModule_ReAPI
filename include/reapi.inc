@@ -1,6 +1,6 @@
 /*
  * ReAPI functions (natives).
- * Version: 1.4.0 (API AMX v2010.1).
+ * Version: 1.5.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -27,15 +27,15 @@
  * functions listing (some swapping) which will break the compatibility        *
  * if I attempt to support an older version of that game binary.               *
  *                                                                             *
- * To finish, I've compiled this module using "my own" ReAPI public files      *
- * where some functions names have been renamed (very minor) and I'm also      *
+ * To finish, I have compiled this module using "my own" ReAPI public files    *
+ * where some functions names have been renamed (very minor) and I am also     *
  * using different upper case naming style for various structs/classes, etc..  *
  * Like "IRehldsHookchains" into "IReHLDSHookChains", etc..                    *
  *                                                                             *
  ******************************************************************************/
 
 #if defined _reapi_included
-	#endinput
+    #endinput
 #endif
 #define _reapi_included
 
@@ -86,7 +86,7 @@ native ReAPI_BF_GetBinaryInformations(ReAPI_BT:iBinaryType, {Float, _}:...);
  * Notes:
  *   You must use this function in your plugins and in an AMX hook called soon (as "server_changelevel", "plugin_precache" or "plugin_init").
  *   This is destined to make your plugin "inactive" (AMX log and pause of the plugin), with an error message, when it needs a specific version of a "Re" binary in order to make work some functions or hooks.
- *   Despite the fact the others functions (as the natives related to the hook manager) will throw errors (when CVar "amx_debug" enabled) when trying to use a function/hook that is unavailable in the current used version of a "Re" binary, this native should always be present in your plugins. */
+ *   Despite the fact the other functions (as the natives related to the hook manager) will throw errors (when CVar "amx_debug" enabled) when trying to use a function/hook that is unavailable in the current used version of a "Re" binary, this native should always be present in your plugins. */
 native ReAPI_BF_HasBinaryRunning(ReAPI_BT:iBinaryType, bool:bCheckVersion, iMajorVersionRequired, iMinorVersionRequired, bool:bCheckFunctions, bool:bCheckHookChains);
 
 
@@ -135,7 +135,7 @@ native ReAPI_CFT:ReAPI_FC_GetCallFunctionTypeID(ReAPI_CFGT:iCallFunctionGroupTyp
  *       return
  *
  *     new pEngineClientHandle
- *     if(!ReAPI_FC_CallFunctionByTypeID(iFuncTypeID_RHSVS_GetClient_t, 0, iClientID, pEngineClientHandle)) // Something goes wrong, maybe invalid client ID passed (like 54).
+ *     if(!ReAPI_FC_CallFunctionByTypeID(iFuncTypeID_RHSVS_GetClient_t, 0, iClientID, pEngineClientHandle) || pEngineClientHandle == 0) // Something goes wrong, maybe invalid client ID passed (like 54).
  *       return
  *
  *   Second (by type name):
@@ -167,14 +167,14 @@ native ReAPI_FC_CallFunctionByTypeName(ReAPI_CFGT:iCallFunctionGroupTypeID, cons
 /******************************** INFORMATIONS *********************************
  * Those "extras function call" are natives that can call functions being      *
  * "outside from the public ReAPI the developers expose to users", or,         *
- * or group a multiple ReAPI's functions (as for the TakeDamage native).       *
+ * or group a multiple ReAPI's functions (as for the "TakeDamage" native).     *
  *                                                                             *
- * I've thinked about adding two more powerful natives allowing the call of    *
- * most of the functions from the CBaseEntity and CGameRules classes, but I've *
- * thinked this goes too much "out of scope" and not matching to that my       *
+ * I have thinked about adding two more powerful natives allowing the call of  *
+ * most of the functions from the "CBaseEntity" and "CGameRules" classes,      *
+ * but I think this goes too much "out of scope" and do not match to that my   *
  * "ReAPI" module version should contain. So for now this is not implemented.  *
  * Meantime, if you like my module and have plans to use it and support more   *
- * AMX Mod and all of that I'm doing on it, you could beg me to add this,      *
+ * AMX Mod and all of that I am doing on it, you could beg me to add this,     *
  * then maybe I will! Hehehehehe!                                              *
  *                                                                             *
  ******************************************************************************/
@@ -245,7 +245,7 @@ native ReAPI_HM_AddHookByTypeName(ReAPI_BT:iBinaryType, const szHookFunctionType
 
 /* Switch the status of an AMX hook (by handle). This basically disable/enable the AMX plugin's callback from being called.
  * The "pAMXHookHandle" parameter is the address of an AMX hook created via the previous "ReAPI_HM_AddHookByType<ID|Name>" natives.
- * It is important you pass a correct address, not a "shitty non-zero value", however this will crash the server since I've not implemented a "safety" check on that function (except when you provide a NULL/0 value).
+ * It is important you pass a correct address, not a "shitty non-zero value", however this will crash the server since I have not implemented a "safety" check on that function (except when you provide a NULL/0 value).
  * The "bStatus" parameter is to change the status of the hook (disable/enable it).
  *
  * Return values:
@@ -403,11 +403,11 @@ native ReAPI_HM_RemoveHookByHandle(&pAMXHookHandle);
  *     4 - The value of the parameter differs from the previous current (value based, not address based).
  *
  * Extras informations (common to both "get/set" natives):
- *   About the "iMaxSize" parameter (native's parameter #4), 1 is the default value used when not provided (for variables), so you don't need to specify it, except for array parameters (unless you don't want to retrieve/alter full data of an array).
+ *   About the "iMaxSize" parameter (native's parameter #4), 1 is the default value used when not provided (for variables), so you do not need to specify it, except for array parameters (unless you do not want to retrieve/alter full data of an array).
  *   For vector parameters, it is important you provide a size being a multiple of 3 (as for the example function's parameter #4), in case you do not, the system will force "3" as size when lower (when not provided or when you set it to 2).
  *   For the structure/class parameters, the system can not alter them, so you have to deal with memory value natives in order to retrieve/alter the data.
  *
- * Note: Don't forget to read the main (but shorted) introduction/documentation in the top (before this whole description). */
+ * Note: Do not forget to read the main (but shorted) introduction/documentation in the top (before this whole description). */
 native ReAPI_HM_GetFunctionParameter(bool:bCurrent, iNumber, {Float, _}:...);
 native ReAPI_HM_SetFunctionParameter(bool:bCurrent, iNumber, {Float, _}:...);
 
@@ -493,10 +493,10 @@ native ReAPI_HM_ResetFunctionParameters(iParamsBits);
  *     4 - The value of the return differs from the previous current (value based, not address based).
  *
  * Extra information (common to both "get/set" natives):
- *   About the "iMaxSize" parameter (native's parameter #3), you don't need to provide it (except for strings), since arrays are not supported with the return values.
+ *   About the "iMaxSize" parameter (native's parameter #3), you do not need to provide it (except for strings), since arrays are not supported with the return values.
  *   For the structure/class return values, the system can not alter them, so you have to deal with the memory value natives in order to retrieve/alter the data.
  *
- * Note: Don't forget to read the main introduction/documentation in the top (before this whole description). */
+ * Note: Do not forget to read the main introduction/documentation in the top (before this whole description). */
 native ReAPI_HM_GetFunctionReturn(ReAPI_FRMT:iMethodType, {Float, _}:...);
 native ReAPI_HM_SetFunctionReturn(bool:bCustom, {Float, _}:...);
 
@@ -540,7 +540,7 @@ native ReAPI_HM_SetFunctionReturn(bool:bCustom, {Float, _}:...);
  *
  *   Also keep in mind, since the previous "ReAPI_HM_GetFunctionReturn" native has different method types, including an automatic one (ReAPI_FRMT_UsableByGlobal), you do not need to use this native in order to know which return value (original or custom) will be used for the current function call.
  *
- *   Don't forget to read the main introduction/documentation in the top (before this whole description). */
+ *   Do not forget to read the main introduction/documentation in the top (before this whole description). */
 native ReAPI_HM_GetHookReturn(bool:bGlobal, bool:bForFunctionReturn);
 
 
@@ -556,4 +556,5 @@ native ReAPI_HM_GetHookReturn(bool:bGlobal, bool:bForFunctionReturn);
  *   This native was added in order to be used in the callbacks of some functions not passing this buffer as pointer, since I pass the "readable string" on the callbacks.
  *   But it is also because I've not provided my other natives to retrieve advanced informations about my parameters and return system. */
 native ReAPI_ES_SetKeyValue(pszInfoBuffer, const szKey[], const szValue[]);
+
 
