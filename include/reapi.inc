@@ -1,6 +1,6 @@
 /*
  * ReAPI functions (natives).
- * Version: 1.5.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.6.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -35,7 +35,7 @@
  ******************************************************************************/
 
 #if defined _reapi_included
-    #endinput
+	#endinput
 #endif
 #define _reapi_included
 
@@ -556,5 +556,4 @@ native ReAPI_HM_GetHookReturn(bool:bGlobal, bool:bForFunctionReturn);
  *   This native was added in order to be used in the callbacks of some functions not passing this buffer as pointer, since I pass the "readable string" on the callbacks.
  *   But it is also because I've not provided my other natives to retrieve advanced informations about my parameters and return system. */
 native ReAPI_ES_SetKeyValue(pszInfoBuffer, const szKey[], const szValue[]);
-
 
