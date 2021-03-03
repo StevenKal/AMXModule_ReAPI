@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.5.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.6.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -1112,6 +1112,13 @@ enum ReAPI_CFT {
 	 * Return type: Entity ID in the "iEntityID" variable.
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Create an entity and add it to the CS's hashtable (this will allow the game to track it effectively). */
+
+	/* Function name (API): "PlantBomb".
+	 * Function name (real): "PlantBomb_api".
+	 * Format (usage): (..., iOwnerID, Float:vStart[3], Float:vAngles[3], &iC4EntityID).
+	 * Return type: Entity ID in the "iC4EntityID" variable.
+	 * API required (ReGameDLL_CS): v5.20.
+	 * Description: Create an C4 entity (ground bomb grenade). */
 
 	/* Function name (API): "RadiusDamage".
 	 * Function name (real): "RadiusDamage_api".
