@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.6.1 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.7.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -2032,6 +2032,13 @@ enum ReAPI_HFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Called when a server command (or client being shared with the server) is executed.
 	 * Information: You can use this hook to block a server command from being executed, or even use it to block a client from using the famous "status" and "ping" commands (but think at filtering by performer ID). */
+
+	/* Function name (API): "GetEntityInit".
+	 * Function name (real): "GetEntityInit_internal".
+	 * Format (callback): (const szClassName[]).
+	 * Return type: Pointer.
+	 * API required (ReHLDS): v3.9.
+	 * Description: Called when an entity class name is checked. */
 
 	/* Function name (API): "HandleNetCommand".
 	 * Function name (real): "HandleNetCommand".
