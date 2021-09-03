@@ -1,6 +1,6 @@
 /*
  * ReAPI functions (natives).
- * Version: 1.7.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.8.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -17,14 +17,14 @@
  * Also, each function call or hook chain requires a specific version of the   *
  * Re* DLLs, but the module requires you run at least one of those versions:   *
  *   ReHLDS: v1.0 or higher (from comit #2 [2015-05-04]).                      *
- *   ReGameDLL_CS: v5.0 or higher (from comit #158 [2016-12-06]).              *
+ *   ReGameDLL_CS: v5.21 or higher (from comit #534 [2021-09-02]).             *
  *   Reunion: v1.1 or higher.                                                  *
  *   ReChecker: v2.1 or higher.                                                *
  *   VTC: v3.0 or higher.                                                      *
  *                                                                             *
  * As specified above, ReHLDS only requires an old version as base, but not    *
- * for ReGameDLL_CS which requires a v5.0, because there had changes in the    *
- * functions listing (some swapping) which will break the compatibility        *
+ * for ReGameDLL_CS which requires a v5.21, because there had changes in the   *
+ * functions listing (some swapping + IDs) which will break the compatibility  *
  * if I attempt to support an older version of that game binary.               *
  *                                                                             *
  * To finish, I have compiled this module using "my own" ReAPI public files    *
@@ -73,21 +73,15 @@ native ReAPI_BF_GetBinaryInformations(ReAPI_BT:iBinaryType, {Float, _}:...);
 /* Check if the server has a "Re" binary installed/running, and with some extras conditions.
  * The "iBinaryType" parameter is a ReAPI_BT_* from "reapi_const.inc".
  * The "bCheckVersion" parameter is to check the version via the "i<Major|Minor>VersionRequired" parameters, and require it.
- * The "bCheckFunctions" and "bCheckHookChains" parameters are to check the availability of the "functions" and "hook chains" addresses (g_p*) related to the binary.
- *
- * Return values:
- *   0 - Complete failure (invalid binary type provided, or, the related binary is not installed/running [no ReHLDS engine, no ReGameDLL_CS game, etc.]).
- *   1 - Half failure (the related binary is installed/running, but the version (major/minor) does not match to the requirements or there is no "functions" or/and "hook chains" address(es)).
- *   2 - Success.
- *       Notes:
- *         Keep in mind this can be the case when the related binary is installed/running and when the booleans parameters are set to false, but the "functions" or/and "hook chains" address(es) might not be available (critical).
- *         You can let those boolean parameters to false when it is only about checking the presence of the related binary, but when you need to use the functions or/and hook chains in a plugin (usually the case and point), those booleans parameters must be set to true for a proper safety check.
+ * The "bCheckFunctions" and "bCheckHookChains" parameters are to check the availability of the "functions" and "hook chains" addresses (g_p*) related to the binary, it is recommended to always set them to true as they deal with the internal requirements by the module.
+ * Returns a ReAPI_HBRRT_* from "reapi_const.inc".
  *
  * Notes:
  *   You must use this function in your plugins and in an AMX hook called soon (as "server_changelevel", "plugin_precache" or "plugin_init").
  *   This is destined to make your plugin "inactive" (AMX log and pause of the plugin), with an error message, when it needs a specific version of a "Re" binary in order to make work some functions or hooks.
- *   Despite the fact the other functions (as the natives related to the hook manager) will throw errors (when CVar "amx_debug" enabled) when trying to use a function/hook that is unavailable in the current used version of a "Re" binary, this native should always be present in your plugins. */
-native ReAPI_BF_HasBinaryRunning(ReAPI_BT:iBinaryType, bool:bCheckVersion, iMajorVersionRequired, iMinorVersionRequired, bool:bCheckFunctions, bool:bCheckHookChains);
+ *   Despite the fact the other functions (as the natives related to the hook manager) will throw errors (when CVar "amx_debug" enabled) when trying to use a function/hook that is unavailable in the current used version of a "Re" binary.
+ *   This native should always be present in your plugins. */
+native ReAPI_HBRRT:ReAPI_BF_HasBinaryRunning(ReAPI_BT:iBinaryType, bool:bCheckVersion, iMajorVersionRequired, iMinorVersionRequired, bool:bCheckFunctions = true, bool:bCheckHookChains = true);
 
 
 /************************** NATIVES -> Function call **************************/
@@ -96,7 +90,7 @@ native ReAPI_BF_HasBinaryRunning(ReAPI_BT:iBinaryType, bool:bCheckVersion, iMajo
  * The "iCallFunctionGroupTypeID" parameter is a ReAPI_CFGT_* from "reapi_const.inc".
  * The "szCallFunctionTypeName" parameter is the call function name as string format from "reapi_const.inc" (the part after each "Function name (API)"),
  * but take care, it is case-sensitive (more for "performance"), since you are supposed to grab with your mouse's cursor the content with quotes, so do not try writting manually something like "sv_emitsound2" instead of "SV_EmitSound2", this will not find the function ID.
- * The "bCheckAvailability" parameter (I recommend to always set it on true) is to control the availability of the function type, that means it will check if the related "Re" binary is running, and also if the API version required to use it is available.
+ * The "bCheckAvailability" parameter (I recommend to always set it to true) is to control the availability of the function type, that means it will check if the related "Re" binary is running, and also if the API version required to use it is available.
  *
  * Return values (from "reapi_const.inc"):
  *   "ReAPI_CFT_Invalid"     - The binary type is invalid, or, the function is invalid/unknown (that means either you provided an "unknown function", either you did not write the name by respecting case-sensitivity).
@@ -202,7 +196,7 @@ native ReAPI_EFC_TakeDamage(iMethodType = 3, bool:bExport, iEntityID, iInflictor
  * The "iBinaryType" parameter is a ReAPI_BT_* from "reapi_const.inc".
  * The "szHookFunctionTypeName" parameter is the hook function name as string format from "reapi_const.inc" (the part after each "Function name (API)"),
  * but take care, it is case-sensitive (more for "performance"), since you are supposed to grab with your mouse's cursor the content with quotes, so do not try writting manually something like "cbaseplayer::TakeDamage" instead of "CBasePlayer::TakeDamage", this will not find the function ID.
- * The "bCheckAvailability" parameter (I recommend to always set it on true) is to control the availability of the function type, that means it will check if the related "Re" binary is running, and also if the API version required to use it is available.
+ * The "bCheckAvailability" parameter (I recommend to always set it to true) is to control the availability of the function type, that means it will check if the related "Re" binary is running, and also if the API version required to use it is available.
  *
  * Return values (from "reapi_const.inc"):
  *   "ReAPI_HFT_Invalid"     - The binary type is invalid, or, the function is invalid/unknown (that means either you provided an "unknown function", either you did not write the name by respecting case-sensitivity).
@@ -223,9 +217,9 @@ native ReAPI_HFT:ReAPI_HM_GetHookFunctionTypeID(ReAPI_BT:iBinaryType, const szHo
 
 /* Add an AMX hook (by type ID or type name). An "AMX hook" is the "new name" I give to an "AMX forward".
  * The "iAMXHookCallType" parameter is a ReAPI_AHCT_* from "reapi_const.inc" (more informations in this file).
- * The "iAMXHookPriorityType" parameter is a ReAPI_AHPT_* from "reapi_const.inc" (more informations in this file). But this is currently unavailable/unsupported (system not implemented).
+ * The "iAMXHookPriorityType" parameter is a ReAPI_AHPT_* from "reapi_const.inc" (more informations in this file).
  * The "szCallback" parameter is the name of the public function in the plugin, where the function will be called. It is highly important you respect the usage format specified in the "reapi_const.inc" file (related to the hook function type).
- * The "pAMXHookHandle" variable is the address of the AMX hook/forward, something you can use with the other hooks natives (to switch its status or remove it).
+ * The "pAMXHookHandle" variable is the address of the AMX hook, something you can use with the other hooks natives (to switch its status or remove it).
  * The value of this variable will always be provided with the right address once the native has a positive return value (new AMX hook created or already existing).
  *
  * Return values (sum of bits):
@@ -245,7 +239,6 @@ native ReAPI_HM_AddHookByTypeName(ReAPI_BT:iBinaryType, const szHookFunctionType
 
 /* Switch the status of an AMX hook (by handle). This basically disable/enable the AMX plugin's callback from being called.
  * The "pAMXHookHandle" parameter is the address of an AMX hook created via the previous "ReAPI_HM_AddHookByType<ID|Name>" natives.
- * It is important you pass a correct address, not a "shitty non-zero value", however this will crash the server since I have not implemented a "safety" check on that function (except when you provide a NULL/0 value).
  * The "bStatus" parameter is to change the status of the hook (disable/enable it).
  *
  * Return values:
@@ -260,7 +253,6 @@ native ReAPI_HM_SwitchHookStatusByHandle(pAMXHookHandle, bool:bStatus);
 
 /* Remove an AMX hook (by handle).
  * The "pAMXHookHandle" parameter/variable is the address of an AMX hook created via the previous "ReAPI_HM_AddHookByType<ID|Name>" natives.
- * Meantime, unlike the previous "ReAPI_HM_SwitchHookStatusByHandle" native, the native checks for its validity (in case of you provide a "shitty non-zero value").
  * This variable works via "reference", that means it will be automatically cleaned up to 0 on success, but also cleaned up in case of you provided a "shitty non-zero value".
  *
  * Return values (sum of bits):
@@ -278,17 +270,17 @@ native ReAPI_HM_RemoveHookByHandle(&pAMXHookHandle);
  * user-friendly, complete and powerful system which takes me hours of         *
  * reflexion and coding in order to be properly achieved and be capable of     *
  * handle a bunch of things any other kind of system just does not support.    *
- * Meantime, and for some reasons, I'll not explain here all the features      *
- * it can handles, and I've also not provided three natives that allow more    *
+ * Meantime, and for some reasons, I will not explain here all the features    *
+ * it can handles, and I have also not provided three natives that allow more  *
  * control over the datas the system keeps in memory temporarily.              *
  * So I've only provided the standard natives from the powerful future version *
  * (with some modifications and enhancements since the next release is not     *
  * finished yet), but this should be quite enough to retrieve/change the       *
  * functions's parameters/return in a goal to maximize programming power       *
  * offered by this module.                                                     *
- * Keep in mind I've made it available to you here, mainly due to the fact     *
+ * Keep in mind I have made it available to you here, mainly due to the fact   *
  * that altering functions's parameters/return is highly useful, and also      *
- * more in order to show you a few things I've done (as a short preview),      *
+ * more in order to show you a few things I have done (as a short preview),    *
  * and also keep in mind in the future AMX Mod version,                        *
  * the system will be in the core binary (it already is by the way),           *
  * and all the modules (including module API hooks) will deal with it.         *
@@ -301,7 +293,7 @@ native ReAPI_HM_RemoveHookByHandle(&pAMXHookHandle);
  * developping AMX Mod, to have an addon better well-made and higher quality). *
  *                                                                             *
  * The future AMX Mod version is destined to be powerful but also simple to    *
- * use at the same time, and I'll do my best to achieve this goal, no matter   *
+ * use at the same time, and I will do my best to achieve this goal, no matter *
  * what the idiots people are thinking, and no matter how many retards who     *
  * know "shit" about that I do, I face off... as the stupid "edon1337 kid"!    *
  *                                                                             *
@@ -386,7 +378,7 @@ native ReAPI_HM_RemoveHookByHandle(&pAMXHookHandle);
  *     ReAPI_HM_SetFunctionParameter(true, 5, SAMT_DYNAMIC_NeverRemove, "This is my new string!")
  *
  *   Extras informations:
- *     This native can only be used in the Pre1 forwards (except for reference parameters where you can use them in the Post1 too).
+ *     This native can only be used in the Pre1 hooks (except for reference parameters where you can use them in the Post1 too).
  *     You can not alter an original parameter.
  *     For the string parameters, I recommend the usage of the following "string alteration methods types" (a SAMT_* from "reapi_const.inc"):
  *       SAMT_Basic               -> Only with some functions that provide an "hardcoded string", like the "pfnClientConnect" and "pfnInconsistentFile" DLL API functions (and please, respect the maximum buffer length).
@@ -415,7 +407,7 @@ native ReAPI_HM_SetFunctionParameter(bool:bCurrent, iNumber, {Float, _}:...);
  * This native is "all-in-one" and can work for the function address itself (but this is not supported by this module), and for the parameters, mainly due to the fact it works via sum of bits.
  * Returns the sum of bits of the parameters that have been restored.
  *
- * Note: This native can only be used in the Pre1 forwards (except for reference parameters where they are resettable in the Post1 forwards).
+ * Note: This native can only be used in the Pre1 hooks (except for reference parameters where they are resettable in the Post1 hooks).
  *
  * Usage examples:
  *   Restore the parameters #2 and #4 of a function: ReAPI_HM_ResetFunctionParameters((1<<2) | (1<<4)).
@@ -444,7 +436,7 @@ native ReAPI_HM_ResetFunctionParameters(iParamsBits);
  *     ReAPI_HM_GetFunctionReturn(ReAPI_FRMT_UsableByGlobal, szCurrentReturnValue, charsmax(szCurrentReturnValue))
  *
  *   Extras informations:
- *     The "ReAPI_FRMT_UsableBy<Local|Global>" are specific methods that make the system uses the actual return value that is "gonna be" used according to the current return value of the forward (more informations in the "reapi_const.inc" file).
+ *     The "ReAPI_FRMT_UsableBy<Local|Global>" are specific methods that make the system uses the actual return value that is "gonna be" used according to the current return value of the hook (more informations in the "reapi_const.inc" file).
  *     For the structure/class type return values, the system returns the address stored, so you have to deal with the memory value natives in order to retrieve/alter the data.
  *     Before triggering something (the internal code), the native basically clean up to 0 the address of the variable/array regarding to the size specified (iMaxSize), in order to always keep your variable/array cleaned up in case of the data could not be retrieved.
  *
@@ -504,29 +496,29 @@ native ReAPI_HM_SetFunctionReturn(bool:bCustom, {Float, _}:...);
  * Returns a ReAPI_AHRVF_* from "reapi_const.inc".
  *
  * Informations about the "bGlobal" boolean parameter:
- *   When set to false, the native will return the current value from the local forwards calls.
- *   The "local" represents all the calls of a single forward, for example, all the "Pre1" forwards in the plugins.
- *   The "global" represents the final result associated to the function in which one a single or a multiple different forwards can be implemented and called.
+ *   When set to false, the native will return the current value from the local hooks calls.
+ *   The "local" represents all the calls of a single hook, for example, all the "Pre1" hooks in the plugins.
+ *   The "global" represents the final result associated to the function in which one a single or a multiple different hooks can be implemented and called.
  *   In other terms, the "global" is the most useful mode due to the fact it deals with the function itself.
  *
  *   Let's make an example with a call for a hook chain function in the ReAPI.
- *   In the module, there is a C++ hook/callback of that function, and inside those forwards are called (in such order):
- *     #1: Local/Single call -> All the "ReAPI_AHCT_Pre1_Alterable" forwards are called.
- *     #2: Local/Single call -> If not "ReAPI_AHRVF_CANCEL_AllPre", all the "ReAPI_AHCT_Pre2_Unalterable" forwards are called.
- *     #3: Local/Single call -> If not "ReAPI_AHRVF_CANCEL_AllPost", all the "ReAPI_AHCT_Post1_Alterable" forwards are called.
- *     #4: Local/Single call -> If not "ReAPI_AHRVF_CANCEL_AllPost", all the "ReAPI_AHCT_Post2_Unalterable" forwards are called.
+ *   In the module, there is a C++ hook/callback of that function, and inside those hooks are called (in such order):
+ *     #1: Local/Single call -> All the "ReAPI_AHCT_Pre1_Alterable" hooks are called.
+ *     #2: Local/Single call -> If not "ReAPI_AHRVF_CANCEL_AllPre", all the "ReAPI_AHCT_Pre2_Unalterable" hooks are called.
+ *     #3: Local/Single call -> If not "ReAPI_AHRVF_CANCEL_AllPost", all the "ReAPI_AHCT_Post1_Alterable" hooks are called.
+ *     #4: Local/Single call -> If not "ReAPI_AHRVF_CANCEL_AllPost", all the "ReAPI_AHCT_Post2_Unalterable" hooks are called.
  *     Total #1 + #2 + #3 + #4 = Global/Multiple call.
  *
  *   Also, unlike the local, the global is not altered for the function call in a hook on POST, but it can be for the function return (for non-void return functions).
- *   That means it is possible to get the "ReAPI_AHRVF_Supercede" return value flag in a "ReAPI_AHCT_Post1_Alterable" by setting the "bGlobal" boolean to false (if such return value has been specified inside this forward),
- *   while with the "bGlobal" on true you might get "ReAPI_AHRVF_Ignored" if the "ReAPI_AHCT_Pre1_Alterable" forward has not been blocked.
+ *   That means it is possible to get the "ReAPI_AHRVF_Supercede" return value flag in a "ReAPI_AHCT_Post1_Alterable" by setting the "bGlobal" boolean to false (if such return value has been specified inside this hook),
+ *   while with the "bGlobal" to true you might get "ReAPI_AHRVF_Ignored" if the "ReAPI_AHCT_Pre1_Alterable" hook has not been blocked.
  *
  * Informations about the "bForFunctionReturn" boolean parameter:
  *   It allows to retrieve the AMX hook return value flag specific for the function call itself, and the one for the function return (for non-void return functions).
  *   This parameter is "mandatory" in order to retrieve proper result according to your needs.
  *   Because, if I take an example with the "CSGameRules::CanHavePlayerItem" function, you can let the function from being called in the "Pre1" call type,
  *   but in a "Post1" call type you may wish to force the return value and use the "ReAPI_AHRVF_Override" or "ReAPI_AHRVF_Supercede" return value flag (but only the "override" should be used in a "Post1" call type).
- *   So from that point, if there is a next call type (forward), you have to be able (from that point) to differentiate the return value used for the function call, and the one used for its return value, however, you could not just know that!
+ *   So from that point, if there is a next call type (hook), you have to be able (from that point) to differentiate the return value used for the function call, and the one used for its return value, however, you could not just know that!
  *
  * Notes:
  *   Most of the time, you'll only need to use one of this natives in the "Pre2" or "Post<1|2>" call types, in order to check if the function call has been blocked (supercede), and ignore your code from being called in such case (when needed).
@@ -553,7 +545,7 @@ native ReAPI_HM_GetHookReturn(bool:bGlobal, bool:bForFunctionReturn);
  * So you must specify "0" when used in those functions, not elsewhere!
  *
  * Notes:
- *   This native was added in order to be used in the callbacks of some functions not passing this buffer as pointer, since I pass the "readable string" on the callbacks.
- *   But it is also because I've not provided my other natives to retrieve advanced informations about my parameters and return system. */
+ *   This native has been added in order to be used in the callbacks of some functions not passing this buffer as pointer, since I pass the "readable string" on the callbacks.
+ *   But it is also because I have not provided my other natives to retrieve advanced informations about my parameters and return system. */
 native ReAPI_ES_SetKeyValue(pszInfoBuffer, const szKey[], const szValue[]);
 
