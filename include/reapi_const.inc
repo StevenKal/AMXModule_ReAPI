@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.7.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.8.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -13,6 +13,11 @@
  * moved elsewhere. Mainly because this is better to centralize them elsewhere.*
  * Also, I have not added all the ones you may need,                           *
  * but only the "most interesting", so, in other terms, only a few.            *
+ *                                                                             *
+ * Also, about the "API required (*)" for the Re* functions and hooks,         *
+ * this is the value on which API the function has been implemented, but not   *
+ * the value you might need for a Re* binary, since my module requires         *
+ * different version (check the top of "reapi.inc" to see) for some reasons.   *
  *                                                                             *
  ******************************************************************************/
 
@@ -30,6 +35,21 @@
 
 
 /***************************** CONSTANTS: ReHLDS ******************************/
+
+/* EmitSound2 functions flags.
+ *
+ * Note: To use with the "SV_EmitSound2" function. */
+#define SND_EMIT2_NOPAS   (1<<0) /* Never check PAS. */
+#define SND_EMIT2_INVOKER (1<<1) /* Do not send to the client invoker. */
+
+/* Server states.
+ *
+ * Note: To use with the "ReAPI_FC_CallFunctionByType<ID|Name>" natives and with the "ReAPI_CFGT_RH_IReHLDSServerData" call function group type and "<Get|Set>State" functions names. */
+enum server_state {
+	ss_dead    = 0, /* Dead. */
+	ss_loading = 1, /* Can load resources (models/sounds/generic/events/consistent files...). */
+	ss_active  = 2, /* Active. */
+};
 
 /* Command source types.
  *
@@ -54,12 +74,6 @@ enum resourcetype {
 
 	rt_max,
 };
-
-/* EmitSound2 functions flags.
- *
- * Note: To use with the "SV_EmitSound2" function. */
-#define SND_EMIT2_NOPAS   (1<<0) /* Never check PAS. */
-#define SND_EMIT2_INVOKER (1<<1) /* Do not send to the client invoker. */
 
 
 /************************** CONSTANTS: ReGameDLL_CS ***************************/
@@ -222,7 +236,7 @@ enum ScenarioEventEndRound {
 
 /* AuthIDs types.
  *
- * Note: To use with the "GetClientAuthtype" function related to the "Reunion" module. */
+ * Note: To use with the "GetClientAuthType" function related to the "Reunion" module. */
 enum dp_authkind_e {
 	DP_AUTH_NONE       = 0,
 
@@ -283,6 +297,18 @@ enum ReAPI_BT {
 	ReAPI_BT_VTC,
 };
 
+/* Return types for the native "ReAPI_BF_HasBinaryRunning". */
+enum ReAPI_HBRRT {
+	ReAPI_HBRRT_NoReBinary,          /* That means the binary type provided is invalid, or, the related binary is not installed/running (no ReHLDS engine, no ReGameDLL_CS game, etc.). */
+	ReAPI_HBRRT_InternalCheckFailed, /* The related binary is installed/running, but the "internal" check has failed, that means the "Re" binary is available but my internal requirements for the module have failed.
+	                                  * Notes:
+	                                  *   The "internal" check is my own major/minor version I require in order to make the functions of a Re* binary available via the module.
+	                                  *   This value can not be returned when both booleans "bCheckFunctions" and "bCheckHookChains" are set to false (those last allow to bypass the "internal" check). */
+	ReAPI_HBRRT_ExternalCheckFailed, /* The related binary is installed/running, but the "external" check has failed, that means the "Re" binary is available but our own requirements about major/minor have failed.
+	                                  * Note: The "external" check is our custom major/minor version we require for a plugin. */
+	ReAPI_HBRRT_Success,             /* That means all our check succeed, and everything is available and safe for use. */
+};
+
 /* Call function group types.
  *
  * Note: To use with the "ReAPI_FC_GetCallFunctionTypeID" and "ReAPI_FC_CallFunctionByTypeName" natives. */
@@ -338,22 +364,22 @@ enum ReAPI_CFT {
 	 *   There is no enumerations for them for two reasons:
 	 *     #1: No problem with the annoying "truncated to 31 characters" warning from the compiler (despite I could use a #define for tricking it but I did not).
 	 *     #2: The documentation is important for me, and its order too, so I can maintain it as I want from the beginning and also on updates,
-	 *         something I could not do with an enumerations list where I'll be "forced" to add the new enums at the end, however this will break compatibility with plugins compiled with old includes.
+	 *         something I could not do with an enumerations list where I will be "forced" to add the new enums at the end, however this will break compatibility with plugins compiled with old includes.
 	 *   For coding, just grab the API function name between the quotes then copy it to your natives (ReAPI_FC_GetCallFunctionTypeID, ReAPI_FC_CallFunctionByTypeName), then respect the format between parentheses for the usage, not much complicated...
 	 *   There are "Function name (API)" and "Function name (real)", the "API" one is the one you must grab and use with the natives, the other one is the real name of the function (internally),
 	 *   but keep in mind it might differs sometimes since Re* projects developers have renamed various functions, or made API functions names differ from internal names for some reasons.
-	 *   Also keep in mind I've renamed a few, usually some lower case characters to upper case ones.
+	 *   Also keep in mind I have renamed a few, usually some lower case characters to upper case ones.
 	 *
 	 *   About the usage format, you have for each of them, the "(..., " before any parameter, those "..." correspond to the base parameters of the "ReAPI_FC_CallFunctionByType<ID|Name>" natives (first parameter until "iStringPoolFlags").
 	 *   All the other possible parameters (when present), must be added at the suite and respected (their number, type, etc.) to avoid malfunction or server crash.
-	 *   Also, I've take the freedom to change some formats for a simplied usage with AMX functions (natives, forwards).
+	 *   Also, I have take the freedom to change some formats for a simplied usage with AMX functions (natives, hooks).
 	 *   For example functions which originally need a ReHLDS's IGameClient pointer will now need an entity ID (in the 1<->maxclients range).
-	 *   But this is similar to the entities-specific functions, where they originally need an edict/CBaseEntity pointer but AMX just need an ID.
+	 *   But this is similar to the entities-specific functions, where they originally need an edict/CBaseEntity pointer but AMX just needs an ID.
 	 *
 	 *   About the return types, when a function returns an entity's ID, the natives allowing you to control the return values will return an ID usable for AMX functions (-1 for an invalid entity), rather than an entity's pointer.
-	 *   Also, for functions that return a pointer, take care, sometimes, some may return the value of a variable/array address (for C++ formats which return "&<variable>"), or sometimes its value, but I've specified this detail in the descriptions.
+	 *   Also, for functions that return a pointer, take care, sometimes, some may return the value of a variable/array address (for C++ formats which return "&<variable>"), or sometimes its value, but I have specified this detail in the descriptions.
 	 *
-	 *   About the versions required, this might not always be accurate (not my fault, I've basically browsed the commits to figure them out), but because the developers sometimes forgot to update the API version when they added new functions.
+	 *   About the versions required, this might not always be accurate (not my fault, I have basically browsed the commits to figure them out), but because the developers sometimes forgot to update the API version when they added new functions.
 	 *   So again, I highly recommend you use the latest versions of those projects, and you "keep up" everytime it is updated, there is nothing wrong at doing this, and this is for the best!
 	 *
 	 *   About the descriptions and informations in globality, those last may change a bit or be extended in the future, especially when the module will be in "final design" with the next AMX Mod version! */
@@ -374,6 +400,13 @@ enum ReAPI_CFT {
 
 
 	/*************************** GROUP: ReHLDSFuncs **************************/
+
+	/* Function name (API): "AddExtDLL".
+	 * Function name (real): "AddExtDll_api".
+	 * Format (usage): (..., pModuleHandle, &bool:bResult).
+	 * Return type: Boolean in the "bResult" variable (false when limit of DLLs reached, however, true).
+	 * API required (ReHLDS): v3.1.
+	 * Description: Add an external DLL to the list linked with the global variable "g_rgextdll". */
 
 	/* Function name (API): "Cmd_RemoveCmd".
 	 * Function name (real): "Cmd_RemoveCmd".
@@ -400,6 +433,14 @@ enum ReAPI_CFT {
 	 * Return type: None.
 	 * API required (ReHLDS): v2.0.
 	 * Description: Play a reliable event on a client to an entity ID. */
+
+	/* Function name (API): "FilterUser".
+	 * Function name (real): "SV_FilterUser".
+	 * Format (usage): (..., pUserIDHandle, &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v1.0.
+	 * Description: Check if an AuthID is in the bans list.
+	 * Information: The result can be different depending on the CVar "sv_filterban". */
 
 	/* Function name (API): "GetAllowCheats".
 	 * Function name (real): "GetAllowCheats_api".
@@ -445,6 +486,14 @@ enum ReAPI_CFT {
 	 * Description: Get the value (handle) of an entity's class name.
 	 * Information: This returns an unique pointer matching to a specific entity's class name, and can be used to determine the presence of a such entity in game binary (despite this do not work for classes not properly linked as "gib"). */
 
+	/* Function name (API): "GetEntityInterface".
+	 * Function name (real): "GetEntityInterface_api".
+	 * Format (usage): (..., &pEntityInterfaceAddress).
+	 * Return type: Pointer in the "pEntityInterfaceAddress" variable.
+	 * API required (ReHLDS): v1.2.
+	 * Description: Get the address of the "gEntityInterface" global variable.
+	 * Information: This allows you to retrieve the value of all the DLL API functions ("pfnGameInit", "pfnSpawn", "pfnThink", "pfTouch", etc.). */
+
 	/* Function name (API): "GetFirstCmdFunctionHandle".
 	 * Function name (real): "GetFirstCmdFunctionHandle_api".
 	 * Format (usage): (..., &pFirstCmdHandle).
@@ -487,12 +536,13 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the address of the "net_message" global variable. */
 
-	/* Function name (API): "GetPluginApi".
+	/* Function name (API): "GetPluginAPI".
 	 * Function name (real): "Rehlds_GetPluginApi".
 	 * Format (usage): (..., const szName[], &pResult).
-	 * Return type: Pointer in the "pResult" variable.
+	 * Return type: Pointer in the "pResult" variable (this should return the value of a global variable of an external module).
 	 * API required (ReHLDS): v2.5.
-	 * Description: Get the value (handle) of a plugin API. */
+	 * Description: Get the value (handle) of a plugin API.
+	 * Information: This is a custom small class which stores a name and a pointer (usually the address/value of a global variable of an external module), and made for custom external modules (like Reunion, etc.). */
 
 	/* Function name (API): "GetRealTime".
 	 * Function name (real): "GetRealTime_api".
@@ -507,6 +557,379 @@ enum ReAPI_CFT {
 	 * Return type: Boolean in the "bSecure" variable.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Check if the server is secured via Steam. */
+
+	/* Function name (API): "MSG_BeginReading".
+	 * Function name (real): "MSG_BeginReading_api".
+	 * Format (usage): (...).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_CurrentBit".
+	 * Function name (real): "MSG_CurrentBit_api".
+	 * Format (usage): (..., &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_EndBitReading".
+	 * Function name (real): "MSG_EndBitReading_api".
+	 * Format (usage): (..., pSizeBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_EndBitWriting".
+	 * Function name (real): "MSG_EndBitWriting_api".
+	 * Format (usage): (..., pSizeBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.0.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_IsBitReading".
+	 * Function name (real): "MSG_IsBitReading_api".
+	 * Format (usage): (..., &bool:bResult).
+	 * Return type: Boolean in the "bResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_IsBitWriting".
+	 * Function name (real): "MSG_IsBitWriting_api".
+	 * Format (usage): (..., &bool:bResult).
+	 * Return type: Boolean in the "bResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_PeekBits".
+	 * Function name (real): "MSG_PeekBits_api".
+	 * Format (usage): (..., iBitsNum, &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadAngle".
+	 * Function name (real): "MSG_ReadAngle_api".
+	 * Format (usage): (..., &Float:flResult).
+	 * Return type: Float in the "flResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBitAngle".
+	 * Function name (real): "MSG_ReadBitAngle_api".
+	 * Format (usage): (..., iBitsNum, &Float:flResult).
+	 * Return type: Float in the "flResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBitCoord".
+	 * Function name (real): "MSG_ReadBitCoord_api".
+	 * Format (usage): (..., &Float:flResult).
+	 * Return type: Float in the "flResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBitData".
+	 * Function name (real): "MSG_ReadBitData_api".
+	 * Format (usage): (..., pDestHandle, iLength, &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBits".
+	 * Function name (real): "MSG_ReadBits_api".
+	 * Format (usage): (..., iBitsNum, &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBitString".
+	 * Function name (real): "MSG_ReadBitString_api".
+	 * Format (usage): (..., &pszResult, szResult[], iResultLength).
+	 * Return type: Pointer in the "pszResult" variable and string in the "szResult" array.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBitVec3Coord".
+	 * Function name (real): "MSG_ReadBitVec3Coord_api".
+	 * Format (usage): (..., const Float:vValue[3]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadBuf".
+	 * Function name (real): "MSG_ReadBuf_api".
+	 * Format (usage): (..., iSize, pBufferHandle, &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v2.2.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadByte".
+	 * Function name (real): "MSG_ReadByte_api".
+	 * Format (usage): (..., &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadChar".
+	 * Function name (real): "MSG_ReadChar_api".
+	 * Format (usage): (..., &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadCoord".
+	 * Function name (real): "MSG_ReadCoord_api".
+	 * Format (usage): (..., &Float:flResult).
+	 * Return type: Float in the "flResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadFloat".
+	 * Function name (real): "MSG_ReadFloat_api".
+	 * Format (usage): (..., &Float:flResult).
+	 * Return type: Float in the "flResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadHiresAngle".
+	 * Function name (real): "MSG_ReadHiresAngle_api".
+	 * Format (usage): (..., &Float:flResult).
+	 * Return type: Float in the "flResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadLong".
+	 * Function name (real): "MSG_ReadLong_api".
+	 * Format (usage): (..., &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadOneBit".
+	 * Function name (real): "MSG_ReadOneBit_api".
+	 * Format (usage): (..., &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadSBits".
+	 * Function name (real): "MSG_ReadSBits_api".
+	 * Format (usage): (..., iBitsNum, &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadShort".
+	 * Function name (real): "MSG_ReadShort_api".
+	 * Format (usage): (..., &iResult).
+	 * Return type: Integer in the "iResult" variable.
+	 * API required (ReHLDS): v2.2.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadString".
+	 * Function name (real): "MSG_ReadString_api".
+	 * Format (usage): (..., &pszResult, szResult[], iResultLength).
+	 * Return type: Pointer in the "pszResult" variable and string in the "szResult" array.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadStringLine".
+	 * Function name (real): "MSG_ReadStringLine_api".
+	 * Format (usage): (..., &pszResult, szResult[], iResultLength).
+	 * Return type: Pointer in the "pszResult" variable and string in the "szResult" array.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadUserCmd".
+	 * Function name (real): "MSG_ReadUsercmd_api".
+	 * Format (usage): (..., pToUserCmdHandle, pFromUserCmdHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_ReadVec3Coord".
+	 * Function name (real): "MSG_ReadVec3Coord_api".
+	 * Format (usage): (..., pSizeBufferHandle, const Float:vValue[3]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_StartBitReading".
+	 * Function name (real): "MSG_StartBitReading_api".
+	 * Format (usage): (..., pSizeBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_StartBitWriting".
+	 * Function name (real): "MSG_StartBitWriting_api".
+	 * Format (usage): (..., pSizeBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.0.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteAngle".
+	 * Function name (real): "MSG_WriteAngle_api".
+	 * Format (usage): (..., pSizeBufferHandle, Float:flValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBitAngle".
+	 * Function name (real): "MSG_WriteBitAngle_api".
+	 * Format (usage): (..., Float:flAngle, iBitsNum).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBitCoord".
+	 * Function name (real): "MSG_WriteBitCoord_api".
+	 * Format (usage): (..., Float:flValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBitData".
+	 * Function name (real): "MSG_WriteBitData_api".
+	 * Format (usage): (..., pSourceHandle, iLength).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBits".
+	 * Function name (real): "MSG_WriteBits_api".
+	 * Format (usage): (..., iData, iBitsNum).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.0.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBitString".
+	 * Function name (real): "MSG_WriteBitString_api".
+	 * Format (usage): (..., const szValue[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBuf".
+	 * Function name (real): "MSG_WriteBuf_api".
+	 * Format (usage): (..., pSizeBufferHandle, iSize, pBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.2.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteByte".
+	 * Function name (real): "MSG_WriteByte_api".
+	 * Format (usage): (..., pSizeBufferHandle, iValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.2.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteBitVec3Coord".
+	 * Function name (real): "MSG_WriteBitVec3Coord_api".
+	 * Format (usage): (..., const Float:vValue[3]).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.0.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteCoord".
+	 * Function name (real): "MSG_WriteCoord_api".
+	 * Format (usage): (..., pSizeBufferHandle, Float:flValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteFloat".
+	 * Function name (real): "MSG_WriteFloat_api".
+	 * Format (usage): (..., pSizeBufferHandle, Float:flValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteHiresAngle".
+	 * Function name (real): "MSG_WriteHiresAngle_api".
+	 * Format (usage): (..., pSizeBufferHandle, Float:flValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteLong".
+	 * Function name (real): "MSG_WriteLong_api".
+	 * Format (usage): (..., pSizeBufferHandle, iValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteOneBit".
+	 * Function name (real): "MSG_WriteOneBit_api".
+	 * Format (usage): (..., iValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteSBits".
+	 * Function name (real): "MSG_WriteSBits_api".
+	 * Format (usage): (..., iData, iBitsNum).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteShort".
+	 * Function name (real): "MSG_WriteShort_api".
+	 * Format (usage): (..., pSizeBufferHandle, iValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.2.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteString".
+	 * Function name (real): "MSG_WriteString_api".
+	 * Format (usage): (..., pSizeBufferHandle, const szValue[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.2.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteUserCmd".
+	 * Function name (real): "MSG_WriteUsercmd_api".
+	 * Format (usage): (..., pSizeBufferHandle, pToUserCmdHandle, pFromUserCmdHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "MSG_WriteVec3Coord".
+	 * Function name (real): "MSG_WriteVec3Coord_api".
+	 * Format (usage): (..., pSizeBufferHandle, const Float:vValue[3]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "RegisterPluginAPI".
+	 * Function name (real): "Rehlds_RegisterPluginApi".
+	 * Format (usage): (..., const szName[], pValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v2.5.
+	 * Description: Register a new plugin API.
+	 * Information: This is a custom small class which stores a name and a pointer (usually the address/value of a global variable of an external module), and made for custom external modules (like Reunion, etc.). */
+
+	/* Function name (API): "RejectConnection".
+	 * Function name (real): "SV_RejectConnection".
+	 * Format (usage): (..., pNetAddressHandle, const szReason[], {Float, _}:...).
+	 * Return type: None.
+	 * API required (ReHLDS): v1.0.
+	 * Description: Reject the connection.
+	 * Information: This can be used in conjunction of the function "SV_DropClient" and right before it. */
+
+	/* Function name (API): "RemoveExtDLL".
+	 * Function name (real): "RemoveExtDll_api".
+	 * Format (usage): (..., pModuleHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.1.
+	 * Description: Remove an external DLL from the list linked with the global variable "g_rgextdll". */
+
+	/* Function name (API): "SendUserReg".
+	 * Function name (real): "SV_SendUserReg".
+	 * Format (usage): (..., pMessageBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v1.0.
+	 * Description: Send the user messages (SVC_NEWUSERMSG). */
 
 	/* Function name (API): "SetMoveVars".
 	 * Function name (real): "SV_SetMoveVars".
@@ -535,6 +958,13 @@ enum ReAPI_CFT {
 	 * Return type: None.
 	 * API required (ReHLDS): v2.8.
 	 * Description: Notify the Steam API a client has disconnected. */
+
+	/* Function name (API): "StripUnprintableAndSpace".
+	 * Function name (real): "StripUnprintableAndSpace_api".
+	 * Format (usage): (..., pszValue, &bool:bResult).
+	 * Return type: Boolean in the "bResult" variable.
+	 * API required (ReHLDS): v3.0.
+	 * Description: Strips some unprintable and space characters from a string. */
 
 	/* Function name (API): "SV_AddResource".
 	 * Function name (real): "SV_AddResource".
@@ -594,6 +1024,34 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.13.
 	 * Description: Update the client's informations (userinfos). */
 
+	/* Function name (API): "SZ_Clear".
+	 * Function name (real): "SZ_Clear_api".
+	 * Format (usage): (..., pSizeBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "SZ_GetSpace".
+	 * Function name (real): "SZ_GetSpace".
+	 * Format (usage): (..., pSizeBufferHandle, iLength, &pData).
+	 * Return type: Pointer in the "pData" variable.
+	 * API required (ReHLDS): v2.0.
+	 * Description: None. */
+
+	/* Function name (API): "SZ_Print".
+	 * Function name (real): "SZ_Print_api".
+	 * Format (usage): (..., pSizeBufferHandle, const szValue[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
+	/* Function name (API): "SZ_Write".
+	 * Function name (real): "SZ_Write_api".
+	 * Format (usage): (..., pSizeBufferHandle, pData, iLength).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.6.
+	 * Description: None. */
+
 	/* Function name (API): "TokenizeString".
 	 * Function name (real): "Cmd_TokenizeString".
 	 * Format (usage): (..., const szString[]).
@@ -605,6 +1063,13 @@ enum ReAPI_CFT {
 	 *   This is the function that updates each command argument once a command is catched.
 	 *   For example, when a client types "hi" in the chat, you will have two commands arguments ("cmd_argc" = 2), with "cmd_argv" #0 = "say", then "cmd_argv" #1 = "hi"...
 	 *   The "read_arg<v|s|c>" natives from the AMX core allow you to retrieve those informations. */
+
+	/* Function name (API): "WriteDeltaDescriptionsToClient".
+	 * Function name (real): "SV_WriteDeltaDescriptionsToClient".
+	 * Format (usage): (..., pMessageBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v1.0.
+	 * Description: Send the user messages related to the delta descriptions (SVC_DELTADESCRIPTION). */
 
 	/* Function name (API): "WriteMovevarsToClient".
 	 * Function name (real): "SV_WriteMovevarsToClient".
@@ -637,6 +1102,13 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.0.
 	 * Description: Get the client ID from an engine's "client" structure pointer. */
 
+	/* Function name (API): "GetLog".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &pLogAddress).
+	 * Return type: Pointer in the "pLogAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the "log" member in the "g_psvs" global variable. */
+
 	/* Function name (API): "GetMaxClients".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., &iMaxClients).
@@ -651,6 +1123,20 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v3.4.
 	 * Description: Get the maximum number of clients the engine can support (highest limit which can be higher than the real one). */
 
+	/* Function name (API): "GetNextClient_t".
+	 * Function name (real): None (this gets the value from a specific calculation).
+	 * Format (usage): (..., pEngineClientHandle, &pNextEngineClientHandle).
+	 * Return type: Pointer in the "pNextEngineClientHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the next engine's "client" structure pointer of a client. */
+
+	/* Function name (API): "GetSpawnCount".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &iSpawnCount).
+	 * Return type: Integer in the "iSpawnCount" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the number of "spawn count" (number of change levels performed since server start). */
+
 	/* Function name (API): "IsLogActive".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., &bool:bIsLogActive).
@@ -658,15 +1144,43 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Check if the server logging is active. */
 
+	/* Function name (API): "IsSecure".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &bool:bIsSecure).
+	 * Return type: Boolean in the "bIsSecure" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check if the server is secure. */
+
+	/* Function name (API): "SetSecure".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., bool:bValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set if the server is secure. */
+
+	/* Function name (API): "SetSpawnCount".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iNumber).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the number of "spawn count" (number of change levels performed since server start). */
+
 
 	/*********************** GROUP: IReHLDSServerData ************************/
 
 	/* Function name (API): "GetClientDLLMD5".
 	 * Function name (real): None (this gets the value of an array).
-	 * Format (usage): (..., szClientDLLMD5[], iClientDLLMD5Length).
-	 * Return type: String in the "szClientDLLMD5" array.
+	 * Format (usage): (..., &pszClientDLLMD5Address, szClientDLLMD5[], iClientDLLMD5Length).
+	 * Return type: Pointer in the "pszClientDLLMD5Address" variable and string in the "szClientDLLMD5" array.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the client DLL MD5 value. */
+
+	/* Function name (API): "GetConsistency".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iID, &pConsistencyAddress).
+	 * Return type: Pointer in the "pConsistencyAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of a consistency resource. */
 
 	/* Function name (API): "GetConsistencyNum".
 	 * Function name (real): None (this gets the value of a variable).
@@ -689,17 +1203,80 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.5.
 	 * Description: Get the number of decals resources. */
 
+	/* Function name (API): "GetEdict".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iEntityID, &pEdictHandle).
+	 * Return type: Pointer in the "pEdictHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of an edict (entity's pointer). */
+
+	/* Function name (API): "GetEntityBaseline".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iEntityID, &pEntityBaselineAddress).
+	 * Return type: Pointer in the "pEntityBaselineAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of an entity's baseline. */
+
+	/* Function name (API): "GetEntityInstanceBaselines".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &pEntityInstanceBaselinesHandle).
+	 * Return type: Pointer in the "pEntityInstanceBaselinesHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value (handle) of a the instance baselines. */
+
+	/* Function name (API): "GetEventPrecache".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iID, &pEventAddress).
+	 * Return type: Pointer in the "pEventAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of an event resource. */
+
+	/* Function name (API): "GetLastIndexCheckInPVS".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &iLastIDCheckInPVS).
+	 * Return type: Integer in the "iLastIDCheckInPVS" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the last entity ID checked in PVS. */
+
+	/* Function name (API): "GetLastIndexCheckTimeInPVS".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &Float:flLastIndexCheckTimeInPVS).
+	 * Return type: Float in the "flLastIndexCheckTimeInPVS" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the time of the last entity ID checked in PVS. */
+
+	/* Function name (API): "GetMaxEdicts".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &iEdictsMax).
+	 * Return type: Integer in the "iEdictsMax" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the maximum number of edicts (entities). */
+
+	/* Function name (API): "GetModel".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iID, &pModelHandle).
+	 * Return type: Pointer in the "pModelHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value (handle) of a model resource. */
+
 	/* Function name (API): "GetModelName".
 	 * Function name (real): None (this gets the value of an array).
-	 * Format (usage): (..., szModelName[], iModelNameLength).
-	 * Return type: String in the "szModelName" array.
+	 * Format (usage): (..., &pszModelNameAddress, szModelName[], iModelNameLength).
+	 * Return type: Pointer in the "pszModelNameAddress" variable and string in the "szModelName" array.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the model name of the server. */
 
+	/* Function name (API): "GetMulticastBuf".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &pMulticastBufferAddress).
+	 * Return type: Pointer in the "pMulticastBufferAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the "multicast" member in the "g_psv" global variable. */
+
 	/* Function name (API): "GetName".
 	 * Function name (real): None (this gets the value of an array).
-	 * Format (usage): (..., szMapName[], iMapNameLength).
-	 * Return type: String in the "szMapName" array.
+	 * Format (usage): (..., &pszMapNameAddress, szMapName[], iMapNameLength).
+	 * Return type: Pointer in the "pszMapNameAddress" variable and string in the "szMapName" array.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the map name of the server. */
 
@@ -709,6 +1286,28 @@ enum ReAPI_CFT {
 	 * Return type: Pointer in the "pNetFromAddress" variable.
 	 * API required (ReHLDS): v2.13.
 	 * Description: Get the address of the "net_from" global variable. */
+
+	/* Function name (API): "GetNumEdicts".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &iEdictsNum).
+	 * Return type: Integer in the "iEdictsNum" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the number of edicts (entities). */
+
+	/* Function name (API): "GetNumGenericNames".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &iGenericNamesNum).
+	 * Return type: Integer in the "iGenericNamesNum" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the number of generic resources.
+	 * Information: This is not the total number of "generic resources", but the one only related to the resources loaded from the map's .res file. */
+
+	/* Function name (API): "GetOldName".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., &pszOldMapNameAddress, szOldMapName[], iOldMapNameLength).
+	 * Return type: Pointer in the "pszOldMapNameAddress" variable and string in the "szOldMapName" array.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the old (previous) map name of the server. */
 
 	/* Function name (API): "GetOldTime".
 	 * Function name (real): None (this gets the value of a variable).
@@ -738,6 +1337,35 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.5.
 	 * Description: Get the number of total resources. */
 
+	/* Function name (API): "GetSignonBuf".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &pSignonBufferAddress).
+	 * Return type: Pointer in the "pSignonBufferAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the "signon" member in the "g_psv" global variable. */
+
+	/* Function name (API): "GetSpectatorBuf".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &pSpectatorBufferAddress).
+	 * Return type: Pointer in the "pSpectatorBufferAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the "spectator" member in the "g_psv" global variable. */
+
+	/* Function name (API): "GetStartSpotName".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., &pszStartSpotNameAddress, szStartSpotName[], iStartSpotNameLength).
+	 * Return type: Pointer in the "pszStartSpotNameAddress" variable and string in the "szStartSpotName" array.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the start spot name of the server.
+	 * Information: This is a custom name which can be added to the command "changelevel" (after the map name) and used later (in the games as custom starting spawn found via target name, instead of "info_player_deathmatch", etc.). */
+
+	/* Function name (API): "GetState".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &server_state:iState).
+	 * Return type: Integer in the "iState" variable (a ss_* from "reapi_const.inc" (above)).
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the state of the server. */
+
 	/* Function name (API): "GetSteamGameServer".
 	 * Function name (real): None (this gets the value of an array).
 	 * Format (usage): (..., &pSteamGameServerHandle).
@@ -752,12 +1380,40 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.5.
 	 * Description: Get the current game time. */
 
-	/* Function name (API): "GetWorldmapCRC".
+	/* Function name (API): "GetWorldMapCRC".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., &iWorldMapCRC).
 	 * Return type: Integer in the "iWorldMapCRC" variable.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the CRC value of the world map. */
+
+	/* Function name (API): "GetWorldModel".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &pWorldModelHandle).
+	 * Return type: Pointer in the "pWorldModelHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value (handle) of the "worldmodel" member in the "g_psv" global variable. */
+
+	/* Function name (API): "IsActive".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &bool:bIsActive).
+	 * Return type: Boolean in the "bIsActive" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check if the server is active. */
+
+	/* Function name (API): "IsPaused".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., &bool:bIsPaused).
+	 * Return type: Boolean in the "bIsPaused" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check if the server is paused. */
+
+	/* Function name (API): "SetActive".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., bool:bActive).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set if the server is active. */
 
 	/* Function name (API): "SetConsistencyNum".
 	 * Function name (real): None (this sets the value of a variable).
@@ -765,6 +1421,34 @@ enum ReAPI_CFT {
 	 * Return type: None.
 	 * API required (ReHLDS): v2.2.
 	 * Description: Set the number of consistency resources. */
+
+	/* Function name (API): "SetDecalNameNum".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iNumber).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the number of decals resources. */
+
+	/* Function name (API): "SetLastIndexCheckInPVS".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iLastIDCheckInPVS).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the last entity ID checked in PVS. */
+
+	/* Function name (API): "SetLastIndexCheckTimeInPVS".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., Float:flLastIndexCheckTimeInPVS).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the time of the last entity ID checked in PVS. */
+
+	/* Function name (API): "SetMaxEdicts".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iNumber).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the maximum number of edicts (entities). */
 
 	/* Function name (API): "SetModelName".
 	 * Function name (real): None (this sets the value of an array).
@@ -781,6 +1465,42 @@ enum ReAPI_CFT {
 	 * Description: Set the map name of the server.
 	 * Information: Using this function to alter the map name (or fake it) is a bad method (not recommended). */
 
+	/* Function name (API): "SetNetFrom".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., pNetFrom).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the "net_from" global variable. */
+
+	/* Function name (API): "SetNumEdicts".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iNumber).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the number of edicts (entities). */
+
+	/* Function name (API): "SetNumGenericNames".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iNumber).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the number of generic resources.
+	 * Information: This does not set the total number of "generic resources", but the one only related to the resources loaded from the map's .res file. */
+
+	/* Function name (API): "SetOldName".
+	 * Function name (real): None (this sets the value of an array).
+	 * Format (usage): (..., const szOldMapName[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the old (previous) map name of the server. */
+
+	/* Function name (API): "SetPaused".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., bool:bPaused).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set if the server is paused. */
+
 	/* Function name (API): "SetResourcesNum".
 	 * Function name (real): None (this sets the value of a variable).
 	 * Format (usage): (..., iNumber).
@@ -788,8 +1508,85 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.7.
 	 * Description: Set the number of total resources. */
 
+	/* Function name (API): "SetStartSpotName".
+	 * Function name (real): None (this sets the value of an array).
+	 * Format (usage): (..., const szStartSpotName[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the start spot name of the server. */
+
+	/* Function name (API): "SetState".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., server_state:iState).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the state of the server. */
+
+	/* Function name (API): "SetWorldMapCRC".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iWorldMapCRC).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the CRC value of the world map. */
+
+	/* Function name (API): "SetWorldModel".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., pWorldModelHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value (handle) of the "worldmodel" member in the "g_psv" global variable. */
+
 
 	/*************************** GROUP: IGameClient **************************/
+
+	/* Function name (API): "GetBottomColor".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iColor).
+	 * Return type: Integer in the "iColor" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "bottomcolor" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetChokeCount".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iChokeCount).
+	 * Return type: Integer in the "iChokeCount" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "chokecount" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetCmdTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flCmdTime).
+	 * Return type: Float in the "flCmdTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "cmdtime" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetConnectionStartedTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flConnectionStartedTime).
+	 * Return type: Float in the "flConnectionStartedTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "connection_started" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetConnectTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flConnectTime).
+	 * Return type: Float in the "flConnectTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "connecttime" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetCRC32MapValue".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iCRC32MapValue).
+	 * Return type: Integer in the "iCRC32MapValue" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "crcValue" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetCustomizationData".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &pCustomizationDataAddress).
+	 * Return type: Pointer in the "pCustomizationDataAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the client's "customdata" member in the engine's "client" structure. */
 
 	/* Function name (API): "GetDatagram".
 	 * Function name (real): None (this gets the value of a variable).
@@ -798,12 +1595,40 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the address of the client's "datagram" member in the engine's "client" structure. */
 
+	/* Function name (API): "GetDeltaSequence".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iDeltaSequence).
+	 * Return type: Integer in the "iDeltaSequence" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "delta_sequence" member in the engine's "client" structure. */
+
 	/* Function name (API): "GetEdict".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., iClientID, &pEdictHandle).
 	 * Return type: Pointer in the "pEdictHandle" variable.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the value of the client's "edict" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetEvents".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &pEventsAddress).
+	 * Return type: Pointer in the "pEventsAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the client's "events" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetFrames".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &pFramesHandle).
+	 * Return type: Pointer in the "pFramesHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "frames" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetHashedCDKey".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iClientID, &pszHashedCDKeyAddress, szHashedCDKey[], iHashedCDKeyLength).
+	 * Return type: Pointer in the "pszHashedCDKeyAddress" variable and string in the "szHashedCDKey" array.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "hashedcdkey" member in the engine's "client" structure. */
 
 	/* Function name (API): "GetId".
 	 * Function name (real): None (this gets the value of a variable).
@@ -817,6 +1642,13 @@ enum ReAPI_CFT {
 	 *     This is because the developers have used "ID - 1" style which is confusing and bad (those process in coding should not be used at all).
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the ID of a client. */
+
+	/* Function name (API): "GetIgnoreCmdTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flIgnoreCmdTime).
+	 * Return type: Float in the "flIgnoreCmdTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "ignorecmdtime" member in the engine's "client" structure. */
 
 	/* Function name (API): "GetLastCmd".
 	 * Function name (real): None (this gets the value of a variable).
@@ -832,6 +1664,20 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.5.
 	 * Description: Get the value of the client's "m_lastvoicetime" member in the engine's "client" structure. */
 
+	/* Function name (API): "GetLatency".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flLatency).
+	 * Return type: Float in the "flLatency" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "latency" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetLocalTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flLocalTime).
+	 * Return type: Float in the "flLocalTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "localtime" member in the engine's "client" structure. */
+
 	/* Function name (API): "GetLoopback".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., iClientID, &bool:bLoopback).
@@ -841,8 +1687,8 @@ enum ReAPI_CFT {
 
 	/* Function name (API): "GetName".
 	 * Function name (real): None (this gets the value of an array).
-	 * Format (usage): (..., iClientID, szName[], iNameLength).
-	 * Return type: String in the "szName" array.
+	 * Format (usage): (..., iClientID, &pszNameAddress, szName[], iNameLength).
+	 * Return type: Pointer in the "pszNameAddress" variable and string in the "szName" array.
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the value of the client's "name" member in the engine's "client" structure.
 	 * Information: This gets the name of the client. */
@@ -861,6 +1707,128 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the address of the client's "network_userid" member in the engine's "client" structure. */
 
+	/* Function name (API): "GetNextMessageIntervalTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flNextMessageIntervalTime).
+	 * Return type: Float in the "flNextMessageIntervalTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "next_messageinterval" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetNextMessageTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flNextMessageTime).
+	 * Return type: Float in the "flNextMessageTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "next_messagetime" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetPacketLoss".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flPacketLoss).
+	 * Return type: Float in the "flPacketLoss" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "packet_loss" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetPhysInfo".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iClientID, &pszPhysInfoAddress, szPhysInfo[], iPhysInfoLength).
+	 * Return type: Pointer in the "pszPhysInfoAddress" variable and string in the "szPhysInfo" array.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "physinfo" member in the engine's "client" structure.
+	 * Information: This is the user information buffer which contains the physics keys and values ("slj", etc.) of a client. */
+
+	/* Function name (API): "GetResourcesNeeded".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &pResourcesNeededAddress).
+	 * Return type: Pointer in the "pResourcesNeededAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the client's "resourcesneeded" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetResourcesOnHand".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &pResourcesOnHandAddress).
+	 * Return type: Pointer in the "pResourcesOnHandAddress" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the address of the client's "resourcesonhand" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetSendInfoState".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bSendInfoState).
+	 * Return type: Boolean in the "bSendInfoState" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "sendinfo" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetSendInfoTime".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flSendInfoTime).
+	 * Return type: Float in the "flSendInfoTime" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "sendinfo_time" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetSendMessageState".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bSendMessageState).
+	 * Return type: Boolean in the "bSendMessageState" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "send_message" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetSendResourceCount".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iSendResourceCount).
+	 * Return type: Integer in the "iSendResourceCount" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "m_sendrescount" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetSkipMessageState".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bSkipMessageState).
+	 * Return type: Boolean in the "bSkipMessageState" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "skip_message" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetSvTimeBase".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &Float:flSvTimeBase).
+	 * Return type: Float in the "flSvTimeBase" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "svtimebase" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetTopColor".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iColor).
+	 * Return type: Integer in the "iColor" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "topcolor" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetUploadFileHandle".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &pUploadFileHandle).
+	 * Return type: Pointer in the "pUploadFileHandle" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "upload" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetUserID".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iUserID).
+	 * Return type: Integer in the "iUserID" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "userid" member in the engine's "client" structure. */
+
+	/* Function name (API): "GetUserInfo".
+	 * Function name (real): None (this gets the value of an array).
+	 * Format (usage): (..., iClientID, &pszUserInfoAddress, szUserInfo[], iUserInfoLength).
+	 * Return type: Pointer in the "pszUserInfoAddress" variable and string in the "szUserInfo" array.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "userinfo" member in the engine's "client" structure.
+	 * Information: This is the user information buffer which contains the user keys and values ("name", "bottom", "topcolor", etc.) of a client. */
+
+	/* Function name (API): "GetViewEntity".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &iViewEntityID).
+	 * Return type: Entity ID in the "iViewEntityID" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Get the value of the client's "pViewEntity" member in the engine's "client" structure.
+	 * Information: This gets the current view entity ID a client is attached with (as a camera, apache helicopter, etc.). */
+
 	/* Function name (API): "GetVoiceStream".
 	 * Function name (real): None (this gets the value of an array).
 	 * Format (usage):
@@ -871,6 +1839,14 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v2.5.
 	 * Description: Get the value of the client's "m_VoiceStreams" member in the engine's "client" structure. */
 
+	/* Function name (API): "HasForceUnmodified".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bHasForceUnmodified).
+	 * Return type: Boolean in the "bHasForceUnmodified" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "has_force_unmodified" member in the engine's "client" structure.
+	 * Information: This checks if a client has some resources forced to be unmodified (they must match to the server's ones). */
+
 	/* Function name (API): "IsActive".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., iClientID, &bool:bIsActive).
@@ -878,6 +1854,21 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Check the value of the client's "active" member in the engine's "client" structure.
 	 * Information: This checks if a client is active. */
+
+	/* Function name (API): "IsClientLagCompensation".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsClientLagCompensation).
+	 * Return type: Boolean in the "bIsClientLagCompensation" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "lc" member in the engine's "client" structure. */
+
+	/* Function name (API): "IsClientPredictingWeapons".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsClientPredictingWeapons).
+	 * Return type: Boolean in the "bIsClientPredictingWeapons" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "lw" member in the engine's "client" structure.
+	 * Information: This checks if a client has the client-side weapon prediction enabled. */
 
 	/* Function name (API): "IsConnected".
 	 * Function name (real): None (this gets the value of a variable).
@@ -887,6 +1878,30 @@ enum ReAPI_CFT {
 	 * Description: Check the value of the client's "connected" member in the engine's "client" structure.
 	 * Information: This checks if a client is connected. */
 
+	/* Function name (API): "IsFakeClient".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsFakeClient).
+	 * Return type: Boolean in the "bIsFakeClient" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "fakeclient" member in the engine's "client" structure.
+	 * Information: This checks if a client is a bot. */
+
+	/* Function name (API): "IsFullyConnected".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsFullyConnected).
+	 * Return type: Boolean in the "bIsFullyConnected" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "fully_connected" member in the engine's "client" structure.
+	 * Information: This checks if a client is fully connected. */
+
+	/* Function name (API): "IsHasUserMsgs".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsHasUserMsgs).
+	 * Return type: Boolean in the "bIsHasUserMsgs" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "hasusrmsgs" member in the engine's "client" structure.
+	 * Information: This checks if a client has received the user messages. */
+
 	/* Function name (API): "IsProxy".
 	 * Function name (real): None (this gets the value of a variable).
 	 * Format (usage): (..., iClientID, &bool:bIsProxy).
@@ -894,6 +1909,13 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v3.8.
 	 * Description: Check the value of the client's "proxy" member in the engine's "client" structure.
 	 * Information: This checks if a client is a proxy. */
+
+	/* Function name (API): "IsSentNewResponse".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsSentNewResponse).
+	 * Return type: Boolean in the "bIsSentNewResponse" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "m_bSentNewResponse" member in the engine's "client" structure. */
 
 	/* Function name (API): "IsSpawned".
 	 * Function name (real): None (this gets the value of a variable).
@@ -903,6 +1925,21 @@ enum ReAPI_CFT {
 	 * Description: Check the value of the client's "spawned" member in the engine's "client" structure.
 	 * Information: This checks if a client is spawned. */
 
+	/* Function name (API): "IsUploadDoneRegistering".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsUploadDoneRegistering).
+	 * Return type: Boolean in the "bIsUploadDoneRegistering" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "uploaddoneregistering" member in the engine's "client" structure. */
+
+	/* Function name (API): "IsUploading".
+	 * Function name (real): None (this gets the value of a variable).
+	 * Format (usage): (..., iClientID, &bool:bIsUploading).
+	 * Return type: Boolean in the "bIsUploading" variable.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Check the value of the client's "uploading" member in the engine's "client" structure.
+	 * Information: This checks if a client is in "uploading resources process" (in the function "SV_ParseResourceList"). */
+
 	/* Function name (API): "SetActive".
 	 * Function name (real): None (this sets the value of a variable).
 	 * Format (usage): (..., iClientID, bool:bActive).
@@ -910,6 +1947,42 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Set the value of the client's "active" member in the engine's "client" structure.
 	 * Information: This sets if a client is active. */
+
+	/* Function name (API): "SetBottomColor".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iColor).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "bottomcolor" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetChokeCount".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iCount).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "chokecount" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetClientLagCompensation".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bIsClientLagCompensation).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "lc" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetClientPredictingWeapons".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bIsClientPredictingWeapons).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "lw" member in the engine's "client" structure.
+	 * Information: This checks if a client has the client-side weapon prediction enabled. */
+
+	/* Function name (API): "SetCmdTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flCmdTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "cmdtime" member in the engine's "client" structure. */
 
 	/* Function name (API): "SetConnected".
 	 * Function name (real): None (this sets the value of a variable).
@@ -919,12 +1992,121 @@ enum ReAPI_CFT {
 	 * Description: Set the value of the client's "connected" member in the engine's "client" structure.
 	 * Information: This sets if a client is connected. */
 
+	/* Function name (API): "SetConnectionStartedTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flConnectionStartedTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "connection_started" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetConnectTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flConnectTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "connecttime" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetCRC32MapValue".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iCRC32MapValue).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "crcValue" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetDeltaSequence".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iDeltaSequence).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "delta_sequence" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetFakeClient".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bFakeClient).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "fakeclient" member in the engine's "client" structure.
+	 * Information: This sets if a client is a bot. */
+
+	/* Function name (API): "SetFullyConnected".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bFullyConnected).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "fully_connected" member in the engine's "client" structure.
+	 * Information: This sets if a client is fully connected. */
+
+	/* Function name (API): "SetHasForceUnmodified".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bHasForceUnmodified).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "has_force_unmodified" member in the engine's "client" structure.
+	 * Information: This sets if a client has some resources forced to be unmodified (they must match to the server's ones). */
+
+	/* Function name (API): "SetHasUserMsgs".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bHasUserMsgs).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "hasusrmsgs" member in the engine's "client" structure.
+	 * Information: This sets if a client has received the user messages. */
+
+	/* Function name (API): "SetIgnoreCmdTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flIgnoreCmdTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "ignorecmdtime" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetLastCmd".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, pLastCmdAddress).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "lastcmd" member in the engine's "client" structure. */
+
 	/* Function name (API): "SetLastVoiceTime".
 	 * Function name (real): None (this sets the value of a variable).
 	 * Format (usage): (..., iClientID, Float:flLastVoiceTime).
 	 * Return type: None.
 	 * API required (ReHLDS): v2.5.
 	 * Description: Set the value of the client's "m_lastvoicetime" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetLatency".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flLatency).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "latency" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetLocalTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flLocalTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "localtime" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetNextMessageIntervalTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flNextMessageIntervalTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "next_messageinterval" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetNextMessageTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flNextMessageTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "next_messagetime" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetPacketLoss".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flPacketLoss).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "packet_loss" member in the engine's "client" structure. */
 
 	/* Function name (API): "SetProxy".
 	 * Function name (real): None (this sets the value of a variable).
@@ -934,6 +2116,48 @@ enum ReAPI_CFT {
 	 * Description: Set the value of the client's "proxy" member in the engine's "client" structure.
 	 * Information: This sets if a client is a proxy. */
 
+	/* Function name (API): "SetSendInfoState".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bSendInfoState).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "sendinfo" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetSendInfoTime".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flSendInfoTime).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "sendinfo_time" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetSendMessageState".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bSendMessageState).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "send_message" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetSendResourceCount".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iSendResourceCount).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "m_sendrescount" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetSentNewResponse".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bIsSentNewResponse).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "m_bSentNewResponse" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetSkipMessageState".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bSkipMessageState).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "skip_message" member in the engine's "client" structure. */
+
 	/* Function name (API): "SetSpawned".
 	 * Function name (real): None (this sets the value of a variable).
 	 * Format (usage): (..., iClientID, bool:bSpawned).
@@ -941,6 +2165,67 @@ enum ReAPI_CFT {
 	 * API required (ReHLDS): v1.0.
 	 * Description: Set the value of the client's "spawned" member in the engine's "client" structure.
 	 * Information: This sets if a client has spawned. */
+
+	/* Function name (API): "SetSvTimeBase".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, Float:flSvTimeBase).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "svtimebase" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetTopColor".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iColor).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "topcolor" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetUploadDoneRegistering".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bUploadDoneRegistering).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "uploaddoneregistering" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetUploadFileHandle".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, pUploadFileHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "upload" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetUploading".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, bool:bUploading).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "uploading" member in the engine's "client" structure.
+	 * Information: This sets if a client is in "uploading resources process" (in the function "SV_ParseResourceList"). */
+
+	/* Function name (API): "SetUserID".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iUserID).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "userid" member in the engine's "client" structure. */
+
+	/* Function name (API): "SetViewEntity".
+	 * Function name (real): None (this sets the value of a variable).
+	 * Format (usage): (..., iClientID, iViewEntityID).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "pViewEntity" member in the engine's "client" structure.
+	 * Information: This sets the current view entity ID a client is attached with (as a camera, apache helicopter, etc.). */
+
+	/* Function name (API): "SetVoiceStream".
+	 * Function name (real): None (this sets the value of an array).
+	 * Format (usage):
+	 *   (..., iClientID, iStreamID, iVoiceStream).
+	 *
+	 *   Note: The "iStreamID" parameter must be in the 0<->1 range.
+	 * Return type: None.
+	 * API required (ReHLDS): v3.10.
+	 * Description: Set the value of the client's "m_VoiceStreams" member in the engine's "client" structure. */
 
 
 	/**************************** GROUP: INetChan ****************************/
@@ -1054,7 +2339,7 @@ enum ReAPI_CFT {
 	 * Description: Get the value of a weapon slot information structure (WeaponSlotInfo) for a specific inventory item type (via name). */
 
 
-	/************************* GROUP: ReGameDLLCSFuncs ************************/
+	/************************* GROUP: ReGameDLLCSFuncs ***********************/
 
 	/* Function name (API): "AddEntityHashValue".
 	 * Function name (real): "AddEntityHashValue".
@@ -1140,6 +2425,20 @@ enum ReAPI_CFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Remove an entity from the CS's hashtable (this will allow the game to track it effectively). */
 
+	/* Function name (API): "SpawnHeadGib".
+	 * Function name (real): "SpawnHeadGib_api".
+	 * Format (usage): (..., iVictimEntityID, &iGibEntityID).
+	 * Return type: Entity ID in the "iGibEntityID" variable.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Create a head gib entity. */
+
+	/* Function name (API): "SpawnRandomGibs".
+	 * Function name (real): "SpawnRandomGibs_api".
+	 * Format (usage): (..., iVictimEntityID, iGibsAmount, iHumanType).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Create an amount (defined via the parameter "iGibsAmount") of gibs entities. */
+
 	/* Function name (API): "UTIL_FindEntityByString".
 	 * Function name (real): "UTIL_FindEntityByString".
 	 * Format (usage): (..., iStartEntityID, const szType[], const szValue[], &iEntityID).
@@ -1147,18 +2446,18 @@ enum ReAPI_CFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Search an entity among all the ones listed in the CS's hashtable.
 	 * Informations:
-	 *   I've added some filters in order to change a bit the internal behavior of the function depending on its parameters passed, in order to let it work differently.
-	 *   The function will not be called when the following conditions are present:
-	 *     #1: The "iStartEntityID" parameter is >= (maxentities-1).
-	 *     #2: The "iStartEntityID" parameter is invalid (no CBaseEntity class pointer [private data]).
-	 *     #3: The "szType" parameter is empty.
-	 *
-	 *   When those previous conditions happen, the native will return 0, and the "iEntityID" variable will return -1.
-	 *
-	 *   Also, against a "crappy behavior" which can make the function return a valid entity ID lower than the one passed as "iStartEntityID" parameter, I've forced the "iEntityID" variable to return -1 in such case. */
+      *   This function can act "a bit illogically", as example, if you put a valid entity ID in the parameter "iStartEntityID" (like 44),
+	 *   and if there is no entity found "above that ID" and matching to the "type" and "value", the function will return the latest entity ID matching to your condition (which could be 39 for example). */
 
 
 	/*************************** GROUP: CCSEntity ****************************/
+
+	/* Function name (API): "FireBuckshots".
+	 * Function name (real): "CCSEntity::FireBuckshots". It is a custom function specific to ReGameDLL_CS.
+	 * Format (usage): (..., iEntityID, iShots, Float:vSource[3], Float:vDirShooting[3], Float:vSpread[3], Float:flDistance, iTracerFreq, iDamage, iAttackerID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Fire bullets from an entity and for an usage with a shotgun (this is a replica of the following "CCSEntity::FireBullets", except the code for the damage has been modified to handle the damage provided rather than a hardcoded value of "20", but the devs could have modified the "FireBullets" one instead). */
 
 	/* Function name (API): "FireBullets".
 	 * Function name (real): "CCSEntity::FireBullets".
@@ -1943,23 +3242,23 @@ enum ReAPI_HFT {
 	 *   There is no enumerations for them for two reasons:
 	 *     #1: No problem with the annoying "truncated to 31 characters" warning from the compiler (despite I could use a #define for tricking it but I did not).
 	 *     #2: The documentation is important for me, and its order too, so I can maintain it as I want from the beginning and also on updates,
-	 *         something I could not do with an enumerations list where I'll be "forced" to add the new enums at the end, however this will break compatibility with plugins compiled with old includes.
+	 *         something I could not do with an enumerations list where I will be "forced" to add the new enums at the end, however this will break compatibility with plugins compiled with old includes.
 	 *   For coding, just grab the API function name between the quotes then copy it to your natives (ReAPI_HM_GetHookFunctionTypeID, ReAPI_HM_AddHookByTypeName, etc.), then grab the format between parentheses for the callback, not much complicated...
 	 *   There are "Function name (API)" and "Function name (real)", the "API" one is the one you must grab and use with the natives, the other one is the real name of the function (internally),
 	 *   but keep in mind it might differs sometimes since Re* projects developers have renamed various functions, or made API functions names differ from internal names for some reasons.
-	 *   Also keep in mind I've renamed a few (as "RoundEnd" which has been changed to "CSGameRules::OnRoundEnd", because it is internally a game rules function and I did not like the standard name for it).
+	 *   Also keep in mind I have renamed a few (as "RoundEnd" which has been changed to "CSGameRules::OnRoundEnd", because it is internally a game rules function and I did not like the standard name for it).
 	 *
 	 *   It is highly important to respect the callback format, however this might just crash the server!
 	 *
-	 *   About the return types, when a function returns an entity's ID, I've not specified this directly but written the original structure/class type the function returns,
+	 *   About the return types, when a function returns an entity's ID, I have not specified this directly but written the original structure/class type the function returns,
 	 *   but keep in mind the natives allowing you to control the return values will return an ID usable for AMX functions, rather than an entity's pointer.
 	 *
-	 *   About the versions required, this might not always be accurate (not my fault, I've basically browsed the commits to figure them out), but because the developers sometimes forgot to update the API version when they added new functions.
+	 *   About the versions required, this might not always be accurate (not my fault, I have basically browsed the commits to figure them out), but because the developers sometimes forgot to update the API version when they added new functions.
 	 *   So again, I highly recommend you use the latest versions of those projects, and you "keep up" everytime it is updated, there is nothing wrong at doing this, and this is for the best!
 	 *
 	 *   About the descriptions of the ReHLDS's hook functions, those ones may not be fully accurate according to the kind of function, because I do not know much the engine and never took time to deeply look at how it works (the code is more complicated than the games, also in a mess from my opinion, and a few parts might be away from my knowledge).
 	 *   So consider some of the descriptions as "indicatives".
-	 *   However, I've just put "None" for some of them I was lazy to figure out or do not even care.
+	 *   However, I have just put "None" for some of them I was lazy to figure out or do not even care.
 	 *
 	 *   About the descriptions and informations in globality, those last may change a bit or be extended in the future, especially when the module will be in "final design" with the next AMX Mod version! */
 
@@ -2541,7 +3840,7 @@ enum ReAPI_HFT {
 	 * Information: This is called in the "CBaseMonster::GibMonster" game function when the CVars "violence_<h|a>gibs" are enabled, so when an entity (human or monster) dies and having gibs enabled. */
 
 
-	/*********************** CLASS GROUP -> CBaseEntity ***********************/
+	/*********************** CLASS GROUP -> CBaseEntity **********************/
 
 	/************************ CLASS -> CBaseAnimating ************************/
 
@@ -2641,6 +3940,14 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when the classification (category/group) of a client is requested at various events.
 	 * Information: This can be used in some situations to disable/enable some features and change a bit the gameplay. */
+
+	/* Function name (API): "CBasePlayer::DeathSound".
+	 * Function name (real): "CBasePlayer::DeathSound".
+	 * Format (callback): (iClientID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Called when a client emits a "death sound" on death.
+	 * Information: This is called in the "CBasePlayer::Killed" game function. */
 
 	/* Function name (API): "CBasePlayer::Disappear".
 	 * Function name (real): "CBasePlayer::Disappear".
@@ -2748,6 +4055,16 @@ enum ReAPI_HFT {
 	 * Description: Called in order to check if the client is pressing an impulse command (flashlight, spray, cheats, etc.).
 	 * Information: This is called in the "CBasePlayer::ItemPostFrame" game function, so in each "client frame". */
 
+	/* Function name (API): "CBasePlayer::JoiningThink".
+	 * Function name (real): "CBasePlayer::JoiningThink".
+	 * Format (callback): (iClientID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Called when a client "thinks for the join status" (permanently called on each call of "CBasePlayer::PreThink", and only when he is not assigned as specatator or not playing).
+	 * Informations:
+	 *   This is called in the "CBasePlayer::PreThink" game function.
+	 *   This is the function that calls the "CBasePlayer::GetIntoGame" function and links the client to the "introduction camera". */
+
 	/* Function name (API): "CBasePlayer::Jump".
 	 * Function name (real): "CBasePlayer::Jump".
 	 * Format (callback): (iClientID).
@@ -2790,6 +4107,14 @@ enum ReAPI_HFT {
 	 *   This is called in the "CBasePlayer::PlayerUse" game function inside the entities research in sphere (the current client using the "use" button is basically not ignored from the research).
 	 *   This can be useful to detect a "use" event with an additional check of the "use" button (like "CBasePlayer::<Duck|Jump>" are good for the "duck" and "jump" events), but you can also use the "CBasePlayer::UseEmpty" hook when the client presses that key but nothing is used. */
 
+	/* Function name (API): "CBasePlayer::Observer_FindNextPlayer".
+	 * Function name (real): "CBasePlayer::Observer_FindNextPlayer".
+	 * Format (callback): (iClientID, bool:bReverse, const szTargetName[]).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Called when a client is spectator and when a "next client" is searched in order to be selected as target to observe.
+	 * Information: This is called in the "CBasePlayer::Observer_HandleButtons", "CBasePlayer::Observer_CheckTarget", "CBasePlayer::Observer_SetMode" game functions. */
+
 	/* Function name (API): "CBasePlayer::Observer_IsValidTarget".
 	 * Function name (real): "CBasePlayer::Observer_IsValidTarget".
 	 * Format (callback): (iClientID, iTargetID, bool:bSameTeam).
@@ -2800,6 +4125,14 @@ enum ReAPI_HFT {
 	 *   This is called in the "CBasePlayer::Observer_FindNextPlayer" game function.
 	 *   This can be useful to ignore a client (as an admin) from being watched, or use it in conjunction with the "GetForceCamera" hook in order to make the "Admin Free Look" code. */
 
+	/* Function name (API): "CBasePlayer::Observer_SetMode".
+	 * Function name (real): "CBasePlayer::Observer_SetMode".
+	 * Format (callback): (iClientID, iMode).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Called when a client is spectator and changes his observer mode (Locked Chase Cam [1], Free Chase Cam [2], Free Look [3], First Person [4], Free Overview [5], Chase Overview [6], etc.).
+	 * Information: This is called in the "CBasePlayer::Observer_HandleButtons" and "CBasePlayer::Observer_CheckTarget" game functions. */
+
 	/* Function name (API): "CBasePlayer::OnSpawnEquip".
 	 * Function name (real): "CBasePlayer::OnSpawnEquip". It is a custom function specific to ReGameDLL_CS, the standard CS has not the code implemented in a standalone function (but in the "CHalfLifeMultiplay::PlayerSpawn" game function).
 	 * Format (callback): (iClientID, bool:bAddDefault, bool:bEquipGame).
@@ -2807,6 +4140,14 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when a client is equiped (weapons, items, etc.) at his spawn.
 	 * Information: This is called in the "CHalfLifeMultiplay::PlayerSpawn" game function. */
+
+	/* Function name (API): "CBasePlayer::Pain".
+	 * Function name (real): "CBasePlayer::Pain".
+	 * Format (callback): (iClientID, iLastHitGroup, bHasArmor).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.21.
+	 * Description: Called when a client emits a "pain sound" on damage reception.
+	 * Information: This is called in the "CBasePlayer::TakeDamage" game function. */
 
 	/* Function name (API): "CBasePlayer::PostThink".
 	 * Function name (real): "CBasePlayer::PostThink".
@@ -3259,7 +4600,7 @@ enum ReAPI_HFT {
 	/* Function name (API): "CSGameRules::OnRoundEnd".
 	 *   Notes:
 	 *     It is a custom function specific to ReGameDLL_CS, the standard CS has not the code implemented in a standalone function (but in the "CHalfLifeMultiplay::CheckWinConditions" game function).
-	 *     Also, the original API name was just "RoundEnd" but I've added the "On" prefix, then also the "CSGameRules" class.
+	 *     Also, the original API name was just "RoundEnd" but I have added the "On" prefix, then also the "CSGameRules" class.
 	 * Function name (real): "CHalfLifeMultiplay::OnRoundEnd".
 	 * Format (callback): (iWinStatus, ScenarioEventEndRound:iEventType, Float:flTerminateDelay).
 	 * Return type: Boolean (false on refusal [scenario not won], true on agreement [scenario won]).
@@ -3316,7 +4657,7 @@ enum ReAPI_HFT {
 	 * Description: Called when the map is changed.
 	 * Informations:
 	 *   This is called in the "pfnServerDeactivate" DLL API function.
-	 *   This is called right after the "plugin_end" forward. */
+	 *   This is called right after the "plugin_end" hook. */
 
 
 	/**************************************************************************
@@ -3354,7 +4695,7 @@ enum ReAPI_HFT {
  *   Because the classic "PRE" and "POST" call types were not enough for my opinion, so I had the idea of adding two more call types, used as "post/event" and being very useful in various situations.
  *   They basically make the related hooks "unalterable", which means nothing is taken is account.
  *   So you can not alter the parameters (even the reference ones), and you can not alter the return value (when the function returns something as an entity ID, a boolean, an integer, etc.).
- *   And the following ReAPI_AHRVF_* (ReAPI's AMX Hook Return Value Flag) are not applicable in them, except for the "cancel" modes (ReAPI_AHRVF_CANCEL_*), for some reasons I've only allowed this to be taken in account.
+ *   And the following ReAPI_AHRVF_* (ReAPI's AMX Hook Return Value Flag) are not applicable in them, except for the "cancel" modes (ReAPI_AHRVF_CANCEL_*), for some reasons I have only allowed this to be taken in account.
  *   The main goal of those new modes is to know "how this is gonna be as definitive status", so before the call (for the "ReAPI_AHCT_Pre2_Unalterable"), and after the call (for the "ReAPI_AHCT_Post2_Unalterable").
  *   The "ReAPI_AHCT_Post2_Unalterable" type is basically "useless" in a function that has no parameters with reference, and also no return value (classic void), but it is still available even if I could get the rid of it in such functions, via an internal workaround.
  *
@@ -3434,22 +4775,18 @@ enum ReAPI_AHCT {
  * Notes:
  *   To use with the "ReAPI_HM_AddHookByType<ID|Name>" natives.
  *
- *   This is designed to set up "importance" level of the AMX hooks/forwards depending on the type of plugin or your code.
+ *   This is designed to set up "importance" level of the AMX hooks depending on the type of plugin or your code.
  *   But keep in mind that the first priority type (ReAPI_AHPT_Beginning), may not be the one you can consider as "high priority" because called in first.
  *   No! The simple reason is that in some situations, the middle (ReAPI_AHPT_Middle) or lastest type (ReAPI_AHPT_End), can have more "priority" than this first.
  *   The explanation is simple, if I take an example with function's parameters modified (via the native "ReAPI_HM_SetFunctionParameter") in multiple hooks using the "ReAPI_AHCT_Pre1_Alterable" call type, the latest AMX hook will basically overwrite the previous values.
  *   The exception can be in case of you use the locked or cancel modes (ReAPI_AHRVF_<LOCK|CANCEL>_*) with the hook using the "ReAPI_AHPT_Beginning" type, but the "locked" modes should only be used on high forcing priority, and the "cancel" ones should never be used.
  *   But to simplify, the "ReAPI_AHPT_Beginning" priority type (and with the "ReAPI_AHRVF_LOCK_*" modes for the parameters/return) should be used on massive enforcement and without compatibility with 3rd-party plugins or original return value,
  *   while the "ReAPI_AHPT_End" should be used for enforcement and with compatibility with 3rd-party plugins or original return values (because you can retrieve the custom parameters, original/custom return value, and base your changes according to them rather than according to the original parameters/return).
- *   However, if you do not want to bother with this, use the "ReAPI_AHPT_Middle" priority type.
- *
- *   This is a system scheduled for the future AMX Mod version, but I've not yet coded it on that future version, and neither on that module.
- *   That means the system is currently unavailable (no effect, so just use the "ReAPI_AHPT_Middle" as priority type for now).
- *   I might implement it on an update but for now this is not mandatory, this can wait a bit. */
+ *   However, if you do not want to bother with this, use the "ReAPI_AHPT_Middle" priority type. */
 enum ReAPI_AHPT {
-	ReAPI_AHPT_Beginning, /* Call the AMX hook/forward before the others. */
-	ReAPI_AHPT_Middle,    /* Call the AMX hook/forward normally (no specific priority, it is like it will be called in the middle among all). */
-	ReAPI_AHPT_End,       /* Call the AMX hook/forward after the others. */
+	ReAPI_AHPT_Beginning, /* Call the AMX hook before the others. */
+	ReAPI_AHPT_Middle,    /* Call the AMX hook normally (no specific priority, it is like it will be called in the middle among all). */
+	ReAPI_AHPT_End,       /* Call the AMX hook after the others. */
 };
 
 /* Parameters and return manager: Function return method types.
@@ -3460,18 +4797,18 @@ enum ReAPI_FRMT {
 	ReAPI_FRMT_Custom,         /* Retrieve the custom return value set by the "ReAPI_HM_SetFunctionReturn" native with the "bCustom" boolean set to true. */
 	ReAPI_FRMT_UsableByLocal,  /* Retrieve the original or custom return value (automatic method which uses the value that is "gonna be" used for the function, so either the original, either the custom).
 	                            * Notes:
-	                            *   This is based on the current AMX hook/forward return value set in the callbacks of the local forward calls (retrievable by the "ReAPI_HM_GetHookReturn" native with the "bGlobal" boolean set to false).
+	                            *   This is based on the current AMX hook return value set in the callbacks of the local hook calls (retrievable by the "ReAPI_HM_GetHookReturn" native with the "bGlobal" boolean set to false).
 	                            *   I usually do not recommend this method. */
 	ReAPI_FRMT_UsableByGlobal, /* Retrieve the original or custom return value (automatic method which uses the value that is "gonna be" used for the function, so either the original, either the custom).
 	                            * Notes:
-	                            *   This is based on the current AMX hook/forward return value set in the callbacks of the global forward calls (retrievable by the "ReAPI_HM_GetHookReturn" native with the "bGlobal" boolean set to true).
-	                            *   I recommend this method rather than the previous one since this is related to the global function itself (which contains all the PRE and POST AMX hooks/forwards). */
+	                            *   This is based on the current AMX hook return value set in the callbacks of the global hook calls (retrievable by the "ReAPI_HM_GetHookReturn" native with the "bGlobal" boolean set to true).
+	                            *   I recommend this method rather than the previous one since this is related to the global function itself (which contains all the PRE and POST AMX hooks). */
 };
 
 /* AMX hook return value flags.
  *
  * Notes:
- *   To use with the "ReAPI_HM_GetHookReturn" native and in the AMX callbacks (hooks/forwards).
+ *   To use with the "ReAPI_HM_GetHookReturn" native and in the AMX callbacks (hooks).
  *
  *   The following return value modes are via flags for various important reasons (enhance the programming power with more possibilities). */
 enum {
@@ -3528,9 +4865,9 @@ enum {
  * Notes:
  *   To use with the "ReAPI_HM_SetFunction<Parameter|Return>" natives, in the parameter #2 or #3.
  *
- *   This a feature from the future AMX Mod version, but I've removed a few modes for the ReAPI version. */
+ *   This a feature from the future AMX Mod version, but I have removed a few modes for the ReAPI version. */
 enum StringAlterationMethodType {
-	SAMT_Basic, /* Use classic method for "hardcoded" strings (non-pointer format).
+	SAMT_Basic, /* Use classic method for "hardcoded" strings (non-pointer format, direct address of the string passed).
 	             * Notes:
 	             *   With the functions (parameters alteration...), this should only be used for the ones that pass an hardcoded array and copy the data as "output".
 	             *   Like a "reference style" (**pszValue) without being a "real one".
@@ -3541,7 +4878,7 @@ enum StringAlterationMethodType {
 	               * Note: This automatically redirects to "SAMT_DYNAMIC_NeverRemove". */
 
 	/* Create a new dynamic string on such conditions:
-	 *   o The address of the string doesn't match to any string (null data).
+	 *   o The address of the string does not match to any string (null data).
 	 *   o The new length is higher than the current one (so we need a bigger string).
 	 *   o The "SAMT_DYNAMIC_RemoveWhenNonEqual" method type is specified and the new length differs from the current one.
 	 *
