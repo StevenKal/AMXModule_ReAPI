@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.8.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.9.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -372,7 +372,7 @@ enum ReAPI_CFT {
 	 *
 	 *   About the usage format, you have for each of them, the "(..., " before any parameter, those "..." correspond to the base parameters of the "ReAPI_FC_CallFunctionByType<ID|Name>" natives (first parameter until "iStringPoolFlags").
 	 *   All the other possible parameters (when present), must be added at the suite and respected (their number, type, etc.) to avoid malfunction or server crash.
-	 *   Also, I have take the freedom to change some formats for a simplied usage with AMX functions (natives, hooks).
+	 *   Also, I have taken the freedom to change some formats for a simplied usage with AMX functions (natives, hooks).
 	 *   For example functions which originally need a ReHLDS's IGameClient pointer will now need an entity ID (in the 1<->maxclients range).
 	 *   But this is similar to the entities-specific functions, where they originally need an edict/CBaseEntity pointer but AMX just needs an ID.
 	 *
@@ -1638,7 +1638,7 @@ enum ReAPI_CFT {
 	 *
 	 *   Notes:
 	 *     This is an "useless function" that returns the same ID as the "iClientID" parameter, but this is decreased to -1.
-	 *     So, if the client as 4 as ID, this will return 3 in the "iID" variable.
+	 *     So, if the client has 4 as ID, this will return 3 in the "iID" variable.
 	 *     This is because the developers have used "ID - 1" style which is confusing and bad (those process in coding should not be used at all).
 	 * API required (ReHLDS): v1.0.
 	 * Description: Get the ID of a client. */
@@ -3188,36 +3188,58 @@ enum ReAPI_CFT {
 
 	/********************** GROUP: IVoiceTranscoderAPI ***********************/
 
+	/* Function name (API): "BlockClient".
+	 * Function name (real): "VoiceTranscoderAPI::BlockClient".
+	 * Format (usage): (..., iClientID).
+	 * Return type: None.
+	 * API required (VTC): v3.1.
+	 * Description: Block a client (voice).
+	 * Information: This basically refuses the function "SV_ParseVoiceData" for the client. */
+
+	/* Function name (API): "IsClientBlocked".
+	 * Function name (real): "VoiceTranscoderAPI::IsClientBlocked".
+	 * Format (usage): (..., iClientID, &bool:bIsClientBlocked).
+	 * Return type: Boolean in the "bIsClientBlocked" variable.
+	 * API required (VTC): v3.1.
+	 * Description: Check if a client is blocked. */
+
 	/* Function name (API): "IsClientMuted".
-	 * Function name (real): Unknown (no source code).
+	 * Function name (real): "VoiceTranscoderAPI::IsClientMuted".
 	 * Format (usage): (..., iClientID, &bool:bIsClientMuted).
 	 * Return type: Boolean in the "bIsClientMuted" variable.
 	 * API required (VTC): v2.1.
 	 * Description: Check if a client is muted (voice). */
 
 	/* Function name (API): "IsClientSpeaking".
-	 * Function name (real): Unknown (no source code).
+	 * Function name (real): "VoiceTranscoderAPI::IsClientSpeaking".
 	 * Format (usage): (..., iClientID, &bool:bIsClientSpeaking).
 	 * Return type: Boolean in the "bIsClientSpeaking" variable.
 	 * API required (VTC): v2.1.
 	 * Description: Check if a client is speaking. */
 
 	/* Function name (API): "MuteClient".
-	 * Function name (real): Unknown (no source code).
+	 * Function name (real): "VoiceTranscoderAPI::MuteClient".
 	 * Format (usage): (..., iClientID).
 	 * Return type: None.
 	 * API required (VTC): v2.1.
 	 * Description: Mute a client (voice). */
 
 	/* Function name (API): "PlaySound".
-	 * Function name (real): Unknown (no source code).
+	 * Function name (real): "VoiceTranscoderAPI::PlaySound".
 	 * Format (usage): (..., iClientID, const szSample[]).
 	 * Return type: None.
 	 * API required (VTC): v2.1.
 	 * Description: Play a sound to a client. */
 
+	/* Function name (API): "UnblockClient".
+	 * Function name (real): "VoiceTranscoderAPI::UnblockClient".
+	 * Format (usage): (..., iClientID).
+	 * Return type: None.
+	 * API required (VTC): v3.1.
+	 * Description: Unblock a client (voice). */
+
 	/* Function name (API): "UnmuteClient".
-	 * Function name (real): Unknown (no source code).
+	 * Function name (real): "VoiceTranscoderAPI::UnmuteClient".
 	 * Format (usage): (..., iClientID).
 	 * Return type: None.
 	 * API required (VTC): v2.1.
@@ -3277,6 +3299,13 @@ enum ReAPI_HFT {
 	 * Description: Called after a client has connected to the server.
 	 * Information: This is called at the end of the "SV_ConnectClient" engine function. */
 
+	/* Function name (API): "Con_Printf".
+	 * Function name (real): "Con_Printf".
+	 * Format (callback): (const szMessage[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.11.
+	 * Description: Called when a console message is sent to the server console in some situations (commands messages like "stats", "status", server logs, etc). */
+
 	/* Function name (API): "CreateFakeClient".
 	 * Function name (real): "CreateFakeClient".
 	 * Format (callback): (const szName[]).
@@ -3307,6 +3336,21 @@ enum ReAPI_HFT {
 	 * Return type: None.
 	 * API required (ReHLDS): v2.9.
 	 * Description: Called when a CVar is set to a value (whatever if new or not). */
+
+	/* Function name (API): "ED_Alloc".
+	 * Function name (real): "ED_Alloc".
+	 * Format (callback): ().
+	 * Return type: Entity's edict pointer (-1 or ID of the new entity created).
+	 * API required (ReHLDS): v3.11.
+	 * Description: Called when an entity is created.
+	 * Information: On success, the entity is a valid edict, but has no private data in that point. */
+
+	/* Function name (API): "ED_Free".
+	 * Function name (real): "ED_Free".
+	 * Format (callback): (iEntityID).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.11.
+	 * Description: Called when an entity is removed (freed from the server). */
 
 	/* Function name (API): "EV_PlayReliableEvent".
 	 * Function name (real): "EV_PlayReliableEvent".
@@ -3518,6 +3562,14 @@ enum ReAPI_HFT {
 	 * API required (ReHLDS): v1.2.
 	 * Description: Called when some "events" are notified to a client.
 	 * Information: This is called at the end of the "SV_WriteEntitiesToClient" engine function. */
+
+	/* Function name (API): "SV_EmitPings".
+	 * Function name (real): "SV_EmitPings".
+	 * Format (callback): (iClientID, pSizeBufferHandle).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.11.
+	 * Description: Called when the pings of the clients are transmitted to a client.
+	 * Information: This is only called when the client presses the button "IN_SCORE" or for a client having a "proxy" status and depending on some conditions. */
 
 	/* Function name (API): "SV_EmitSound2".
 	 * Function name (real): "SV_EmitSound2_internal". It is a custom function specific to ReHLDS.
