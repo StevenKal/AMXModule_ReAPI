@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.9.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.10.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -969,7 +969,7 @@ enum ReAPI_CFT {
 	/* Function name (API): "SV_AddResource".
 	 * Function name (real): "SV_AddResource".
 	 * Format (usage):
-	 *   (..., resourcetype:iResourceType, const szName[], iSize, iFlags, iID).
+	 *   (..., resourcetype:iResourceType, const szFilePath[], iSize, cFlags, iResourceID).
 	 *
 	 *   Note: The "iResourceType" is a t_* from "reapi_const.inc" (above).
 	 * Return type: None.
@@ -3359,6 +3359,14 @@ enum ReAPI_HFT {
 	 * API required (ReHLDS): v1.2.
 	 * Description: Called when a reliable event is played to a client. */
 
+	/* Function name (API): "EV_Precache".
+	 * Function name (real): "EV_Precache" (or more known as "pfnPrecacheEvent").
+	 * Format (callback): (iType, const szFilePath[]).
+	 * Return type: Integer (0 or ID of the event added or already stored).
+	 * API required (ReHLDS): v3.12.
+	 * Description: Called when an event resource is precached. This is a hook of the engine API function.
+	 * Information: This function is made to events files that will be used later by the engine and games. */
+
 	/* Function name (API): "ExecuteServerStringCmd".
 	 * Function name (real): "Cmd_ExecuteString_internal". This is basically a post/delayed hook of the "Cmd_ExecuteString" engine function, and where the command line are already tokenized.
 	 *   Notes (to developers):
@@ -3405,15 +3413,37 @@ enum ReAPI_HFT {
 	 * Description: Called when a studio model is loaded. */
 
 	/* Function name (API): "PF_BuildSoundMsg_I".
-	 * Function name (real): "PF_BuildSoundMsg_I" (or more known as "BuildSoundMsg").
+	 * Function name (real): "PF_BuildSoundMsg_I" (or more known as "pfnBuildSoundMsg").
 	 * Format (callback): (iEntityID, iChannel, const szSample[], Float:flVolume, Float:flAttenuation, iFlags, iPitch, iMsgDestID, iMsgTypeID, Float:vOrigin[3], iMsgTargetID).
 	 * Return type: None.
 	 * API required (ReHLDS): v1.2.
 	 * Description: Called when a sound message is built then emitted. This is a hook of the engine API function. */
 
+	/* Function name (API): "PF_precache_generic_I".
+	 * Function name (real): "PF_precache_generic_I" (or more known as "pfnPrecacheGeneric").
+	 * Format (callback): (const szFilePath[]).
+	 * Return type: Integer (0 or ID of the resource added or already stored).
+	 * API required (ReHLDS): v3.12.
+	 * Description: Called when a generic resource is precached (any kind of file, like .wad, .tga, .mp3, .wav, etc.). This is a hook of the engine API function. */
+
+	/* Function name (API): "PF_precache_model_I".
+	 * Function name (real): "PF_precache_model_I" (or more known as "pfnPrecacheModel").
+	 * Format (callback): (const szFilePath[]).
+	 * Return type: Integer (0 or ID of the resource [model/sprite] added or already stored).
+	 * API required (ReHLDS): v3.12.
+	 * Description: Called when a model/sprite resource is precached. This is a hook of the engine API function.
+	 * Information: This function is made to precache models/sprites files that will be used later by the engine and games. */
+
+	/* Function name (API): "PF_precache_sound_I".
+	 * Function name (real): "PF_precache_sound_I" (or more known as "pfnPrecacheSound").
+	 * Format (callback): (const szFilePath[]).
+	 * Return type: Integer (0 or ID of the resource [.wav sound] added or already stored).
+	 * API required (ReHLDS): v3.12.
+	 * Description: Called when a sound resource is precached. This is a hook of the engine API function.
+	 * Information: This function is made to precache sounds files that will be used later by the engine and games. */
+
 	/* Function name (API): "PF_Remove_I".
-	 * Function name (real): "PF_Remove_I" (or more known as "RemoveEntity").
-	 *   Note (to developers): It would have been better to add a hook of the "ED_Free" engine function, which is the "final one" which removes an entity, as I requested on your GitHub but you play the dead in front of user's requests, boring...
+	 * Function name (real): "PF_Remove_I" (or more known as "pfnRemoveEntity").
 	 * Format (callback): (iEntityID).
 	 * Return type: None.
 	 * API required (ReHLDS): v1.2.
@@ -3477,6 +3507,19 @@ enum ReAPI_HFT {
 	 * Description: Called when the server "activates".
 	 * Information: This is called on each new map to initialize current map datas. */
 
+	/* Function name (API): "SV_AddResource".
+	 * Function name (real): "SV_AddResource".
+	 * Format (callback):
+	 *   (resourcetype:iResourceType, const szFilePath[], iSize, cFlags, iResourceID).
+	 *
+	 *   Note: The "iResourceType" is a t_* from "reapi_const.inc" (above).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.12.
+	 * Description:
+	 *   Called when a resource is added to the global list of resources that is shared with the clients.
+	 *   This is called after all the other "pfnPrecache*" functions, so their datas are pushed into it.
+	 * Information: This is called in the "SV_CreateResourceList" engine function. */
+
 	/* Function name (API): "SV_CheckConnectionLessRateLimits".
 	 * Function name (real): "SV_CheckConnectionLessRateLimits". It is a custom function specific to ReHLDS.
 	 * Format (callback): (pNetAddressHandle, pDataHandle, iLength).
@@ -3523,6 +3566,27 @@ enum ReAPI_HFT {
 	 *   Called when the protocol of a client is checked.
 	 *   The client will be kicked if he can not access to the server due to invalid protocol (not equal).
 	 * Information: This is called in the "SV_ConnectClient" engine function. */
+
+	/* Function name (API): "SV_CheckUserInfo".
+	 * Function name (real): "SV_CheckUserInfo".
+	 * Format (callback):
+	 *   (pNetAddressHandle, const szUserInfo[], bool:bIsReconnecting, iReconnectSlot, szName[]).
+	 *
+	 *   Note: The last parameter ("szName") is by reference.
+	 * Return type: Integer (0 on failure, 1 on success).
+	 * API required (ReHLDS): v3.12.
+	 * Description:
+	 *   Called when the client's informations (userinfos) are checked during his connection.
+	 *   This function checks if the client's password matches to the server's one, then also some checks about his name, then also HLTV.
+	 * Information: This is called in the "SV_ConnectClient" engine function. */
+
+	/* Function name (API): "SV_ClientPrintf".
+	 * Function name (real): "SV_ClientPrintf".
+	 * Format (callback): (const szMessage[]).
+	 * Return type: None.
+	 * API required (ReHLDS): v3.12.
+	 * Description: Called when a console message is sent to the client console (current host client) in some situations (commands messages like "stats", "status", server logs, etc).
+	 * Information: You can use the ReHLDSFuncs's API function "GetHostClient" to retrieve the current client targeted. */
 
 	/* Function name (API): "SV_CompareUserID".
 	 * Function name (real): "SV_CompareUserID".
