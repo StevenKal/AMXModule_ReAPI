@@ -1,6 +1,6 @@
 /*
  * ReAPI constants (defines, enumerations).
- * Version: 1.10.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.11.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
@@ -29,6 +29,14 @@
 
 /* Macros to fix the annoying "truncated to 31 characters" warning.
  * DO NOT MODIFY THIS! */
+#define EVENT_FLASHBANG_GRENADE_EXPLODED       EVENT_FLASHBANG_GRENADE_EXPL
+#define EVENT_PLAYER_BLINDED_BY_FLASHBANG      EVENT_PLAYER_BLINDED_BY_FLASH
+#define EVENT_TUTOR_NEED_TO_BUY_PRIMARY_WEAPON EVENT_TUTOR_NEED_TO_BUY_PWPN
+#define EVENT_TUTOR_NEED_TO_BUY_PRIMARY_AMMO   EVENT_TUTOR_NEED_TO_BUY_PAMMO
+#define EVENT_TUTOR_NEED_TO_BUY_SECONDARY_AMMO EVENT_TUTOR_NEED_TO_BUY_SAMMO
+#define EVENT_TUTOR_NEED_TO_BUY_DEFUSE_KIT     EVENT_TUTOR_NEED_TO_BUY_DKIT
+#define EVENT_RADIO_GET_IN_POSITION_AND_WAIT   EVENT_RADIO_GET_IN_POS_N_WAIT
+
 #define ReAPI_CFGT_RH_IReHLDSServerStatic  ReAPI_CFGT_RH_IReHLDSSVS
 #define ReAPI_CFGT_RGCS_ReGameDLLCSFuncs   ReAPI_CFGT_RGCS_RGDLLCSFuncs
 #define ReAPI_CFGT_VTC_IVoiceTranscoderAPI ReAPI_CFGT_VTC_IVTCAPI
@@ -229,6 +237,142 @@ enum ScenarioEventEndRound {
 	ROUND_GAME_COMMENCE,
 	ROUND_GAME_RESTART,
 	ROUND_GAME_OVER,
+};
+
+/* Custom death message flags.
+ *
+ * Note: To use with the "CSGameRules::SendDeathMessage" ReAPI hook (only the ReGameDLL_CS version, because the standard CS does not have such parameter), and with the "iDeathMessageFlags" variable. */
+enum DeathMessageFlags {
+	PLAYERDEATH_POSITION   = (1<<0), /* Type: Float[3]/Coord/Vector. Description: Position where the victim was killed by the enemy. */
+	PLAYERDEATH_ASSISTANT  = (1<<1), /* Type: Byte. Description: ID of the assistant who helped the attacker to kill the victim. */
+	PLAYERDEATH_KILLRARITY = (1<<2), /* Type: Short. Description: Sum of bits classification for the rarity of the kill (check the "KillRarity" enumeration list below for details). */
+};
+
+/* Classification of various client kill methods in the game.
+ *
+ * Note: To use with the "CSGameRules::SendDeathMessage" ReAPI hook (only the ReGameDLL_CS version, because the standard CS does not have such parameter), and with the "PLAYERDEATH_KILLRARITY" flag set to the "iDeathMessageFlags" variable, and the value of the "iRarityOfKill" variable. */
+enum KillRarity {
+	KILLRARITY_HEADSHOT         = (1<<0), /* Headshot. */
+	KILLRARITY_KILLER_BLIND     = (1<<1), /* Killer was blind. */
+	KILLRARITY_NOSCOPE          = (1<<2), /* No-scope sniper rifle kill. */
+	KILLRARITY_PENETRATED       = (1<<3), /* Penetrated kill (through walls). */
+	KILLRARITY_THRUSMOKE        = (1<<4), /* Smoke grenade penetration kill (bullets went through smoke). */
+	KILLRARITY_ASSISTEDFLASH    = (1<<5), /* Assister helped with a flash. */
+	KILLRARITY_DOMINATION_BEGAN = (1<<6), /* Killer client began dominating the victim (NOTE: This flag is set once). */
+	KILLRARITY_DOMINATION       = (1<<7), /* Continues domination by the killer. */
+	KILLRARITY_REVENGE          = (1<<8), /* Revenge by the killer. */
+};
+
+/* Global events types (used by the bots manager and other things as career, tutor, etc.).
+ *
+ * Note: To use with the "CBotManager::OnEvent" ReAPI hook. */
+enum GameEventType {
+	EVENT_INVALID = 0,
+
+	EVENT_WEAPON_FIRED,                 /* Tell bots the client is attacking. Parameters: #2 = attacker, #3 = none (null). */
+	EVENT_WEAPON_FIRED_ON_EMPTY,        /* Tell bots the client is attacking without clip ammunition. Parameters: #2 = attacker, #3 = none (null). */
+	EVENT_WEAPON_RELOADED,              /* Tell bots the client is reloading his weapon. Parameters: #2 = reloader, #3 = none (null). */
+
+	EVENT_HE_GRENADE_EXPLODED,          /* Tell bots the HE grenade has exploded. Parameters: #2 = grenade thrower, #3 = none (null). */
+	EVENT_FLASHBANG_GRENADE_EXPLODED,   /* Tell bots the flashbang grenade has exploded Parameters: #2 = grenade thrower, #3 = Explosion origin (converted from vector to CBaseEntity's pointer). */
+	EVENT_SMOKE_GRENADE_EXPLODED,       /* Tell bots the smoke grenade has exploded. Parameters: #2 = grenade thrower, #3 = none (null). */
+	EVENT_GRENADE_BOUNCED,
+
+	EVENT_BEING_SHOT_AT,
+	EVENT_PLAYER_BLINDED_BY_FLASHBANG,  /* Tell bots the client is flashed. Parameters: #2 = flashed client, #3 = none (null). */
+	EVENT_PLAYER_FOOTSTEP,              /* Tell bots the client is running. Parameters: #2 = runner client, #3 = none (null). */
+	EVENT_PLAYER_JUMPED,                /* Tell bots the client jumped. Parameters: #2 = jumper client, #3 = none (null). */
+	EVENT_PLAYER_DIED,                  /* Tell bots the client died. Parameters: #2 = victim, #3 = killer. */
+	EVENT_PLAYER_LANDED_FROM_HEIGHT,    /* Tell bots the client has fallen with some damage. Parameters: #2 = landed client, #3 = none (null). */
+	EVENT_PLAYER_TOOK_DAMAGE,           /* Tell bots the client took damage. Parameters: #2 = victim, #3 = attacker. */
+	EVENT_HOSTAGE_DAMAGED,              /* Tell bots the client has injured a hostage. Parameters: #2 = hostage, #3 = injurer. */
+	EVENT_HOSTAGE_KILLED,               /* Tell bots the client has killed a hostage. Parameters: #2 = hostage, #3 = killer. */
+
+	EVENT_DOOR,                         /* Tell bots the door is moving. Parameters: #2 = door, #3 = none (null). */
+	EVENT_BREAK_GLASS,                  /* Tell bots the glass has been broken. Parameters: #2 = glass, #3 = none (null). */
+	EVENT_BREAK_WOOD,                   /* Tell bots the wood has been broken. Parameters: #2 = wood, #3 = none (null). */
+	EVENT_BREAK_METAL,                  /* Tell bots the metal/computer has been broken. Parameters: #2 = metal/computer, #3 = none (null). */
+	EVENT_BREAK_FLESH,                  /* Tell bots the flesh has been broken. Parameters: #2 = flesh, #3 = none (null). */
+	EVENT_BREAK_CONCRETE,               /* Tell bots the concrete has been broken. Parameters: #2 = concrete, #3 = none (null). */
+
+	EVENT_BOMB_PLANTED,                 /* Tell bots the bomb has been planted. Parameters: #2 = planter, #3 = none (null). */
+	EVENT_BOMB_DROPPED,                 /* Tell bots the bomb has been dropped. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_BOMB_PICKED_UP,               /* Let the bots hear the bomb pickup. Parameters: #2 = client that picked up the C4, #3 = none (null). */
+	EVENT_BOMB_BEEP,                    /* Let the bots hear the bomb beeping. Parameters: #2 = C4, #3 = none (null). */
+	EVENT_BOMB_DEFUSING,                /* Tell the bots someone has started defusing. Parameters: #2 = defuser, #3 = none (null). */
+	EVENT_BOMB_DEFUSE_ABORTED,          /* Tell the bots someone has aborted defusing. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_BOMB_DEFUSED,                 /* Tell the bots the bomb is defused. Parameters: #2 = defuser, #3 = none (null). */
+	EVENT_BOMB_EXPLODED,                /* Let the bots hear the bomb exploding. Parameters: #2 = none (null), #3 = none (null). */
+
+	EVENT_HOSTAGE_USED,                 /* Tell bots the hostage is used. Parameters: #2 = user, #3 = none (null). */
+	EVENT_HOSTAGE_RESCUED,              /* Tell bots the hostage has been rescued. Parameters: #2 = rescuer, #3 = hostage. */
+	EVENT_ALL_HOSTAGES_RESCUED,         /* Tell bots all the hostages have been rescued. Parameters: #2 = none (null), #3 = none (null). */
+
+	EVENT_VIP_ESCAPED,                  /* Tell bots the VIP has escaped. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_VIP_ASSASSINATED,             /* Tell bots the VIP has been assassinated. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_TERRORISTS_WIN,               /* Tell bots the terrorists won the round. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_CTS_WIN,                      /* Tell bots the CTs won the round. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_ROUND_DRAW,                   /* Tell bots the round was a draw. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_ROUND_WIN,                    /* Tell carreer the round was a win. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_ROUND_LOSS,                   /* Tell carreer the round was a loss. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_ROUND_START,                  /* Tell bots the round has started (when freeze period has expired). Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_PLAYER_SPAWNED,               /* Tell bots the player has spawned. Parameters: #2 = client spawned, #3 = none (null). */
+	EVENT_CLIENT_CORPSE_SPAWNED,
+	EVENT_BUY_TIME_START,
+	EVENT_PLAYER_LEFT_BUY_ZONE,
+	EVENT_DEATH_CAMERA_START,
+	EVENT_KILL_ALL,
+	EVENT_ROUND_TIME,
+	EVENT_DIE,
+	EVENT_KILL,
+	EVENT_HEADSHOT,
+	EVENT_KILL_FLASHBANGED,
+	EVENT_TUTOR_BUY_MENU_OPENNED,
+	EVENT_TUTOR_AUTOBUY,
+	EVENT_PLAYER_BOUGHT_SOMETHING,
+	EVENT_TUTOR_NOT_BUYING_ANYTHING,
+	EVENT_TUTOR_NEED_TO_BUY_PRIMARY_WEAPON,
+	EVENT_TUTOR_NEED_TO_BUY_PRIMARY_AMMO,
+	EVENT_TUTOR_NEED_TO_BUY_SECONDARY_AMMO,
+	EVENT_TUTOR_NEED_TO_BUY_ARMOR,
+	EVENT_TUTOR_NEED_TO_BUY_DEFUSE_KIT,
+	EVENT_TUTOR_NEED_TO_BUY_GRENADE,
+	EVENT_CAREER_TASK_DONE,
+
+	EVENT_START_RADIO_1,
+	EVENT_RADIO_COVER_ME,
+	EVENT_RADIO_YOU_TAKE_THE_POINT,
+	EVENT_RADIO_HOLD_THIS_POSITION,
+	EVENT_RADIO_REGROUP_TEAM,
+	EVENT_RADIO_FOLLOW_ME,
+	EVENT_RADIO_TAKING_FIRE,
+	EVENT_START_RADIO_2,
+	EVENT_RADIO_GO_GO_GO,
+	EVENT_RADIO_TEAM_FALL_BACK,
+	EVENT_RADIO_STICK_TOGETHER_TEAM,
+	EVENT_RADIO_GET_IN_POSITION_AND_WAIT,
+	EVENT_RADIO_STORM_THE_FRONT,
+	EVENT_RADIO_REPORT_IN_TEAM,
+	EVENT_START_RADIO_3,
+	EVENT_RADIO_AFFIRMATIVE,
+	EVENT_RADIO_ENEMY_SPOTTED,
+	EVENT_RADIO_NEED_BACKUP,
+	EVENT_RADIO_SECTOR_CLEAR,
+	EVENT_RADIO_IN_POSITION,
+	EVENT_RADIO_REPORTING_IN,
+	EVENT_RADIO_GET_OUT_OF_THERE,
+	EVENT_RADIO_NEGATIVE,
+	EVENT_RADIO_ENEMY_DOWN,
+	EVENT_END_RADIO,
+
+	EVENT_NEW_MATCH,                    /* Tell bots the game is new (complete reset). Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_PLAYER_CHANGED_TEAM,          /* Tell bots the client has switched his team (also called from "pfnClientPutInServer"). Parameters: #2 = switcher, #3 = none (null). */
+	EVENT_BULLET_IMPACT,                /* Tell bots the client has shoot at a wall. Parameters: #2 = shooter, #3 = shoot trace end position (converted from vector to CBaseEntity's pointer). */
+	EVENT_GAME_COMMENCE,                /* Tell bots the game is commencing. Parameters: #2 = none (null), #3 = none (null). */
+	EVENT_WEAPON_ZOOMED,                /* Tell bots the client has switched the zoom of his weapon. Parameters: #2 = zoom switcher, #3 = none (null). */
+	EVENT_HOSTAGE_CALLED_FOR_HELP,      /* Tell bots the hostage is talking. Parameters: #2 = listener, #3 = none (null). */
+
+	NUM_GAME_EVENTS,
 };
 
 
@@ -2341,6 +2485,13 @@ enum ReAPI_CFT {
 
 	/************************* GROUP: ReGameDLLCSFuncs ***********************/
 
+	/* Function name (API): "AddAmmoNameToAmmoRegistry".
+	 * Function name (real): "AddAmmoNameToAmmoRegistry_api".
+	 * Format (usage): (..., const szAmmoName[], &iAmmoID).
+	 * Return type: Integer in the "iAmmoID" variable (-1 or ID of the ammunition registered).
+	 * API required (ReGameDLL_CS): v5.23.
+	 * Description: Add a new ammunition to the list of the existing ones. */
+
 	/* Function name (API): "AddEntityHashValue".
 	 * Function name (real): "AddEntityHashValue".
 	 * Format (usage):
@@ -2359,21 +2510,21 @@ enum ReAPI_CFT {
 	 * Format (usage): (..., iInflictorID, iEntityID, Float:flDamage, iDamageBits).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
-	 * Description: Specify an entity and some damage values/types to the multi-damage accumulator. */
+	 * Description: Specify an entity and some damage values/types to the multidamage accumulator. */
 
 	/* Function name (API): "ApplyMultiDamage".
 	 * Function name (real): "ApplyMultiDamage_api".
 	 * Format (usage): (..., iInflictorID, iAttackerID).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
-	 * Description: Affect some damage values/types to an entity previously defined by the "AddMultiDamage" function (multi-damage accumulator). */
+	 * Description: Affect some damage values/types to an entity previously defined by the "AddMultiDamage" function (multidamage accumulator). */
 
 	/* Function name (API): "ClearMultiDamage".
 	 * Function name (real): "ClearMultiDamage_api".
 	 * Format (usage): (...).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
-	 * Description: Clear the multi-damage accumulator. */
+	 * Description: Clear the multidamage accumulator. */
 
 	/* Function name (API): "Cmd_Argc".
 	 * Function name (real): "Cmd_Argc_api".
@@ -2397,6 +2548,13 @@ enum ReAPI_CFT {
 	 * Return type: Entity ID in the "iEntityID" variable.
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Create an entity and add it to the CS's hashtable (this will allow the game to track it effectively). */
+
+	/* Function name (API): "CreateWeaponBox".
+	 * Function name (real): "CreateWeaponBox_api".
+	 * Format (usage): (..., iInventoryItemEntityID, iOwnerID, const szModelPath[], Float:vOrigin[3], Float:vAngles[3], Float:vVelocity[3], Float:flLifetime, bool:bPackAmmo, &iWeaponBoxEntityID).
+	 * Return type: Entity ID in the "iWeaponBoxEntityID" variable.
+	 * API required (ReGameDLL_CS): v5.23.
+	 * Description: Create a weapon box entity (ground entity which stores inventory item(s)). */
 
 	/* Function name (API): "PlantBomb".
 	 * Function name (real): "PlantBomb_api".
@@ -2425,6 +2583,17 @@ enum ReAPI_CFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Remove an entity from the CS's hashtable (this will allow the game to track it effectively). */
 
+	/* Function name (API): "SpawnGrenade".
+	 * Function name (real): "SpawnGrenade_api".
+	 * Format (usage):
+	 *   (..., iInventoryItemTypeID, iOwnerID, Float:vStart[3], Float:vVelocity[3], Float:flExplodeTime, iTeamID, usEvent, &iGrenadeEntityID).
+	 *
+	 *   Note: The "flExplodeTime" parameter is not available with a C4 item type, and the "iTeamID" and "useEvent" parameters are not available with a flash and C4 item type, so pass (0.0/0) instead.
+	 * Return type: Entity ID in the "iGrenadeEntityID" variable.
+	 * API required (ReGameDLL_CS): v5.23.
+	 * Description: Create a grenade entity (HE, flash, smoke, C4).
+	 * Information: This calls the "CGrenade::Shoot<SatchelCharge|SmokeGrenade|Timed[2]>" functions. */
+
 	/* Function name (API): "SpawnHeadGib".
 	 * Function name (real): "SpawnHeadGib_api".
 	 * Format (usage): (..., iVictimEntityID, &iGibEntityID).
@@ -2439,6 +2608,23 @@ enum ReAPI_CFT {
 	 * API required (ReGameDLL_CS): v5.21.
 	 * Description: Create an amount (defined via the parameter "iGibsAmount") of gibs entities. */
 
+	/* Function name (API): "TextureTypePlaySound".
+	 * Function name (real): "TextureTypePlaySound_api".
+	 * Format (usage): (..., pTraceResultHandle, const Float:vStart[3], const Float:vEnd[3], iBulletType).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.23.
+	 * Description: Play a sound based on a trace result simulating a bullet hit (metal, wood, concrete, etc.). */
+
+	/* Function name (API): "UTIL_DecalTrace".
+	 * Function name (real): "UTIL_DecalTrace_api".
+	 * Format (usage):
+	 *   (..., pTraceResultHandle, iDecalNumber).
+	 *
+	 *   Note: The "iDecalNumber" parameter is a default number among the global decals ("DECAL_*" from filename "decals.h") loaded by the game (range: 0<->41).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.23.
+	 * Description: Display a decal on the world or on an entity (BSP models only). */
+
 	/* Function name (API): "UTIL_FindEntityByString".
 	 * Function name (real): "UTIL_FindEntityByString".
 	 * Format (usage): (..., iStartEntityID, const szType[], const szValue[], &iEntityID).
@@ -2448,6 +2634,41 @@ enum ReAPI_CFT {
 	 * Informations:
       *   This function can act "a bit illogically", as example, if you put a valid entity ID in the parameter "iStartEntityID" (like 44),
 	 *   and if there is no entity found "above that ID" and matching to the "type" and "value", the function will return the latest entity ID matching to your condition (which could be 39 for example). */
+
+	/* Function name (API): "UTIL_Remove".
+	 * Function name (real): "UTIL_Remove_api".
+	 * Format (usage): (..., iEntityID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.23.
+	 * Description: Remove an entity.
+	 * Information: This calls the "UTIL_Remove" game function. */
+
+	/* Function name (API): "UTIL_RemoveOther".
+	 * Function name (real): "UTIL_RemoveOther_api".
+	 * Format (usage):
+	 *   (..., const szClassName[], iCount).
+	 *
+	 *   Note: The "iCount" parameter is available but no longer workable internally, it was originaly there to set up a maximum limit of entities to remove.
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Remove all the entities matching to the class name provided.
+	 * Information: This calls the "UTIL_Remove" game function. */
+
+	/* Function name (API): "UTIL_ResetEntities".
+	 * Function name (real): "UTIL_ResetEntities_api".
+	 * Format (usage): (...).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Reset/Remove all the entities of the server (depending of the objects capabilities "FCAP_*", so only when capabilities "FCAP_MUST_RELEASE" or "FCAP_MUST_RESET" are set).
+	 * Information: This calls the "UTIL_Remove" or "C*::Restart" game functions. */
+
+	/* Function name (API): "UTIL_RestartOther".
+	 * Function name (real): "UTIL_RestartOther_api".
+	 * Format (usage): (..., const szClassName[]).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Reset all the entities matching to the class name provided.
+	 * Information: This calls the "C*::Restart" and "FireTargets" game functions. */
 
 
 	/*************************** GROUP: CCSEntity ****************************/
@@ -2528,10 +2749,10 @@ enum ReAPI_CFT {
 	/* Function name (API): "DropPlayerItem".
 	 * Function name (real): "CCSPlayer::DropPlayerItem".
 	 * Format (usage):
-	 *   (..., iClientID, const szItemName[]).
+	 *   (..., iClientID, const szItemName[], &iWeaponBoxEntityID).
 	 *
 	 *   Note: If in case the "szItemName" parameter is empty, this will drop the current item the client is holding.
-	 * Return type: None.
+	 * Return type: Entity ID in the "iWeaponBoxEntityID" variable.
 	 * API required (ReGameDLL_CS): v4.2.
 	 * Description: Drop an inventory item of a client. */
 
@@ -2557,8 +2778,8 @@ enum ReAPI_CFT {
 
 	/* Function name (API): "DropShield".
 	 * Function name (real): "CCSPlayer::DropShield".
-	 * Format (usage): (..., iClientID, bool:bDeploy).
-	 * Return type: None.
+	 * Format (usage): (..., iClientID, bool:bDeploy, &iShieldEntityID).
+	 * Return type: Entity ID in the "iShieldEntityID" variable.
 	 * API required (ReGameDLL_CS): v4.2.
 	 * Description: Drop the shield of a client. */
 
@@ -2673,6 +2894,13 @@ enum ReAPI_CFT {
 	 * API required (ReGameDLL_CS): v4.2.
 	 * Description: Set the observer mode to a client. */
 
+	/* Function name (API): "OnSpawnEquip".
+	 * Function name (real): "CCSPlayer::OnSpawnEquip".
+	 * Format (usage): (..., iClientID, bool:bAddDefault, bool:bEquipGame).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Equip a client with inventory items allowed by the game (depending on map or game settings). */
+
 	/* Function name (API): "ReloadWeapons".
 	 * Function name (real): "CCSPlayer::ReloadWeapons".
 	 * Format (usage):
@@ -2745,6 +2973,14 @@ enum ReAPI_CFT {
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.7.
 	 * Description: Remove the spawn protection from a client. */
+
+	/* Function name (API): "Reset".
+	 * Function name (real): "CCSPlayer::Reset".
+	 * Format (usage): (..., iClientID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Reset some datas (score, money, inventory items, etc.) of a client.
+	 * Information: This is called by the game rules when the round is restarted. */
 
 	/* Function name (API): "ResetSequenceInfo".
 	 * Function name (real): "CCSPlayer::ResetSequenceInfo".
@@ -2835,10 +3071,22 @@ enum ReAPI_CFT {
 	 * Format (usage):
 	 *   (..., iClientID, iDestID).
 	 *
-	 *   Note: The "iDestID" parameter must be a valid client (HLTV/human), and it can not be "0" to specify everyone.
+	 *   Note: The "iDestID" parameter must be a valid client (HLTV/human).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v4.2.
-	 * Description: Set/Unset the score attribution properties linked to a client (those are the "DEAD", "BOMB", "VIP", "DEFKIT" tags visible on the scoreboard). */
+	 * Description: Set/Unset the score attribution properties linked to a client (those are the "DEAD", "BOMB", "VIP", "DEFKIT" tags visible on the scoreboard).
+	 * Information: This is the function internally used by the following "SetScoreboardAttributes" function. */
+
+	/* Function name (API): "SetScoreboardAttributes".
+	 * Function name (real): "CCSPlayer::SetScoreboardAttributes".
+	 * Format (usage):
+	 *   (..., iClientID, iDestID = -1).
+	 *
+	 *   Note: Specify a client to target as "iDestID" parameter, or "-1" to target all the clients (that the games usually does).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Update the scoreboard attributes of a client or all the clients.
+	 * Information: This calls the previous "SetScoreAttrib" function. */
 
 	/* Function name (API): "SetSpawnProtection".
 	 * Function name (real): "CCSPlayer::SetSpawnProtection".
@@ -2908,6 +3156,50 @@ enum ReAPI_CFT {
 	 * API required (ReGameDLL_CS): v5.4.
 	 * Description: Copy the values of an item information structure (ItemInfo) to a specific inventory item (via entity ID).
 	 * Information: Once called, the CCSPlayerItem's "m_ItemInfo" structure member of the entity ID will contain the values of the "pItemInfoHandle" variable. */
+
+
+	/************************* GROUP: CCSPlayerWeapon ************************/
+
+	/* Function name (API): "DefaultDeploy".
+	 * Function name (real): "CCSPlayerWeapon::DefaultDeploy".
+	 * Format (usage):
+	 *   (..., iWeaponEntityID, const szViewModel[], const szWeaponModel[], iAnimationType, const szAnimationExtention[], iSkiplocal, &iResult).
+	 *
+	 *   Note: The "iSkipLocal" variable is to skip the animation playing in case of the client has prediction (setinfo "cl_lw") enabled.
+	 * Return type: Integer in the "iResult" variable (0 when unable to be deployed, 1 on success).
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Deploy a weapon of a client. */
+
+	/* Function name (API): "DefaultReload".
+	 * Function name (real): "CCSPlayerWeapon::DefaultReload".
+	 * Format (usage): (..., iWeaponEntityID, iClipSize, iAnimationType, Float:flDelay, &iResult).
+	 * Return type: Integer in the "iResult" variable (0 when unable to reload, 1 on success).
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Reload a weapon (all except shotguns) of a client. */
+
+	/* Function name (API): "DefaultShotgunReload".
+	 * Function name (real): "CCSPlayerWeapon::DefaultShotgunReload".
+	 * Format (usage): (..., iWeaponEntityID, iAnimationType, iStartAnimationType, Float:flDelay, Float:flStartDelay, const szReloadSound1[], const szReloadSound2[], &bool:bResult).
+	 * Return type: Boolean in the "bResult" variable (false when unable to reload, true on success).
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Reload a weapon (only shotgun) of a client. */
+
+	/* Function name (API): "KickBack".
+	 * Function name (real): "CCSPlayerWeapon::KickBack".
+	 * Format (usage): (..., iWeaponEntityID, Float:flUpBase, Float:flLateralBase, Float:flUpModifier, Float:flLateralModifier, Float:flUpMax, Float:flLateralMax, iDirectionChange).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Process a kick back effect on the client owning the weapon (this changes the crosshair position, done after shooting). */
+
+	/* Function name (API): "SendWeaponAnim".
+	 * Function name (real): "CCSPlayerWeapon::SendWeaponAnim".
+	 * Format (usage):
+	 *   (..., iWeaponEntityID, iAnimationType, iSkipLocal).
+	 *
+	 *   Note: The "iSkipLocal" variable is to skip the animation playing in case of the client has prediction (setinfo "cl_lw") enabled.
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Play an animation (deploy, shooting, reloading, etc.) on a weapon of a client. */
 
 
 	/**************************************************************************
@@ -3520,6 +3812,16 @@ enum ReAPI_HFT {
 	 *   This is called after all the other "pfnPrecache*" functions, so their datas are pushed into it.
 	 * Information: This is called in the "SV_CreateResourceList" engine function. */
 
+	/* Function name (API): "SV_AllowPhysent".
+	 * Function name (real): "SV_AllowPhysent". It is a custom function specific to ReHLDS.
+	 * Format (callback): (iEntityID, iClientID).
+	 * Return type: Boolean (false on refusal, true on agreement).
+	 * API required (ReHLDS): v3.13.
+	 * Description: Called when an entity is gonna collide with a client.
+	 * Informations:
+	 *   This can be used to make a semiclip plugin, by refusing collision between two entities, you will allow the client to pass at through the entity.
+	 *   But might only be called for clients entities, so for other kind of entities you might use the new DLL API function "pfnShouldCollide". */
+
 	/* Function name (API): "SV_CheckConnectionLessRateLimits".
 	 * Function name (real): "SV_CheckConnectionLessRateLimits". It is a custom function specific to ReHLDS.
 	 * Format (callback): (pNetAddressHandle, pDataHandle, iLength).
@@ -3787,12 +4089,46 @@ enum ReAPI_HFT {
 
 	/**************************** STANDARD -> PM *****************************/
 
+	/* Function name (API): "PM_AirAccelerate".
+	 * Function name (real): "PM_AirAccelerate".
+	 * Format (callback):
+	 *   (Float:vWishDirection[3], Float:flWishSpeed, Float:flAcceleration, pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The three first parameters are the ones of the original format, the two last parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when an air movement is performed by a client.
+	 * Information: This is called in the "PM_AirMove" game function.*/
+
 	/* Function name (API): "PM_AirMove".
 	 * Function name (real): "PM_AirMove".
-	 * Format (callback): (iClientID).
+	 * Format (callback):
+	 *   (iClientID, pPlayerMoveHandle).
+	 *
+	 *   Note: The first parameter is the one of the original format, the last parameter is "custom" (not alterable via the parameters system).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when an air movement is performed by a client (when "pmove->onground" is not equal to -1). */
+
+	/* Function name (API): "PM_CheckWaterJump".
+	 * Function name (real): "PM_CheckWaterJump".
+	 * Format (callback):
+	 *   (pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The two parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a water jump check is done on a client (when he has his waist underwater, so when EntVars's "waterlevel" is set to "2"). */
+
+	/* Function name (API): "PM_Duck".
+	 * Function name (real): "PM_Duck".
+	 * Format (callback):
+	 *   (pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The two parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called to check if a client is ducking. */
 
 	/* Function name (API): "PM_Init".
 	 * Function name (real): "PM_Init".
@@ -3801,6 +4137,26 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when the PM (Player Movement) fields are initialized (global "pmove" variable, stuck table, texture types, etc.). */
 
+	/* Function name (API): "PM_Jump".
+	 * Function name (real): "PM_Jump".
+	 * Format (callback):
+	 *   (pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The two parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a jump movement is performed by a client (when he presses the "jump" button). */
+
+	/* Function name (API): "PM_LadderMove".
+	 * Function name (real): "PM_LadderMove".
+	 * Format (callback):
+	 *   (pLadderHandle, pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The first parameter is the one of the original format, the two last parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a ladder movement is performed by a client. */
+
 	/* Function name (API): "PM_Move".
 	 * Function name (real): "PM_Move".
 	 * Format (callback): (pPlayerMoveHandle, iServer).
@@ -3808,12 +4164,45 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called on each player movement (main function which handles most of those physics in the game). */
 
+	/* Function name (API): "PM_PlayStepSound".
+	 * Function name (real): "PM_PlayStepSound".
+	 * Format (callback):
+	 *   (iStep, Float:flVolume, pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The both first parameters are the ones of the original format, the two last parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a client emits a steps sound. */
+
+	/* Function name (API): "PM_UnDuck".
+	 * Function name (real): "PM_UnDuck".
+	 * Format (callback):
+	 *   (pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The two parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a client tries to unduck. */
+
 	/* Function name (API): "PM_UpdateStepSound".
 	 * Function name (real): "PM_UpdateStepSound".
-	 * Format (callback): (pPlayerMoveHandle, iServer).
+	 * Format (callback):
+	 *   (pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The two parameters are "custom" (not alterable via the parameters system).
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.1.
 	 * Description: Called when the step sounds variables are updated. */
+
+	/* Function name (API): "PM_WaterJump".
+	 * Function name (real): "PM_WaterJump".
+	 * Format (callback):
+	 *   (pPlayerMoveHandle, iClientID).
+	 *
+	 *   Note: The two parameters are "custom" (not alterable via the parameters system).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a water jump movement is performed by a client. */
 
 
 	/************************ STANDARD -> Grenade/C4 *************************/
@@ -3847,6 +4236,30 @@ enum ReAPI_HFT {
 	 * Description: Called when a smoke grenade is created. */
 
 
+	/****************** STANDARD -> Multidamage accumulator ******************/
+
+	/* Function name (API): "AddMultiDamage".
+	 * Function name (real): "AddMultiDamage".
+	 * Format (callback): (iInflictorID, iTargetEntityID, Float:flDamage, iDamageBits).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the data of the multidamage accumulator is set (usually inside the call of virtual function "*::TraceAttack"). */
+
+	/* Function name (API): "ApplyMultiDamage".
+	 * Function name (real): "ApplyMultiDamage".
+	 * Format (callback): (iInflictorID, iAttackerID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the data of the multidamage accumulator is applied (usually after the call of virtual function "*::TraceAttack"). */
+
+	/* Function name (API): "ClearMultiDamage".
+	 * Function name (real): "ClearMultiDamage".
+	 * Format (callback): ().
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the data of the multidamage accumulator is cleared (usually before the call of virtual function "*::TraceAttack"). */
+
+
 	/*********************** STANDARD -> Unclassified ************************/
 
 	/* Function name (API): "BuyGunAmmo".
@@ -3856,6 +4269,13 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when a client buys munitions for his inventory items (triggered after the buy process in a loop at through all of his inventory items and until the maximum ammo is reached, but also depending on his money).
 	 * Information: This is called in the "BuyAmmo" game function. */
+
+	/* Function name (API): "BuyItem".
+	 * Function name (real): "BuyItem".
+	 * Format (callback): (iClientID, iSlotID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a client buys an item not being a weapon (triggered after the buy process). */
 
 	/* Function name (API): "BuyWeaponByWeaponID".
 	 * Function name (real): "BuyWeaponByWeaponID".
@@ -3871,6 +4291,14 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.15.
 	 * Description: Called when a weapon box entity is created.
 	 * Information: This is called in the functions that drop a client's inventory item ("packPlayerItem", "packPlayerNade", "CBasePlayer::DropPlayerItem"), so when a client manually drops it or dies. */
+
+	/* Function name (API): "FreeGameRules".
+	 * Function name (real): "FreeGameRules". It is a custom function specific to ReGameDLL_CS.
+	 * Format (callback): (pGameRulesAddress).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.22.
+	 * Description: Called when the game rules are freed.
+	 * Information: This is called right before the call of the function "InstallGameRules" (in the function "CWorld::Precache"). */
 
 	/* Function name (API): "GetForceCamera".
 	 * Function name (real): "GetForceCamera".
@@ -4049,6 +4477,13 @@ enum ReAPI_HFT {
 	 * Description: Called when the teams are balanced by the game, in order to apply or not some rules about "switching a client to another team".
 	 * Information: This is called in the "CHalfLifeMultiplay::BalanceTeams" game function. */
 
+	/* Function name (API): "CBasePlayer::CheckTimeBasedDamage".
+	 * Function name (real): "CBasePlayer::CheckTimeBasedDamage".
+	 * Format (callback): (iClientID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a time based damage type is checked (damage or health restore which are delayed). */
+
 	/* Function name (API): "CBasePlayer::Classify".
 	 * Function name (real): "CBasePlayer::Classify".
 	 * Format (callback): (iClientID).
@@ -4107,6 +4542,14 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when a client presses the "duck" button or is fully ducking.
 	 * Information: This is called in the "CBasePlayer::PreThink" game function. */
+
+	/* Function name (API): "CBasePlayer::EntSelectSpawnPoint".
+	 * Function name (real): "CBasePlayer::EntSelectSpawnPoint".
+	 * Format (callback): (iClientID).
+	 * Return type: Entity's edict pointer (-1 or ID of the spawn point entity the client is gonna use for respawning).
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the game checks the "best spawn point" in order to respawn a client in that location.
+	 * Information: This is the internal function called in the "CHalfLifeMultiplay::GetPlayerSpawnSpot" game function. */
 
 	/* Function name (API): "CBasePlayer::GetIntoGame".
 	 * Function name (real): "CBasePlayer::GetIntoGame". It is a custom function specific to ReGameDLL_CS, the standard CS has not the code implemented in a standalone function.
@@ -4249,6 +4692,14 @@ enum ReAPI_HFT {
 	 * Description: Called when a client is spectator and changes his observer mode (Locked Chase Cam [1], Free Chase Cam [2], Free Look [3], First Person [4], Free Overview [5], Chase Overview [6], etc.).
 	 * Information: This is called in the "CBasePlayer::Observer_HandleButtons" and "CBasePlayer::Observer_CheckTarget" game functions. */
 
+	/* Function name (API): "CBasePlayer::Observer_Think".
+	 * Function name (real): "CBasePlayer::Observer_Think".
+	 * Format (callback): (iClientID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a client is spectator and when the observer functions (CBasePlayer::Observer_<Check<Properties|Target>|HandleButtons>) are checked (major function called on each client frame).
+	 * Information: This is called in the "CBasePlayer::PreThink" game function. */
+
 	/* Function name (API): "CBasePlayer::OnSpawnEquip".
 	 * Function name (real): "CBasePlayer::OnSpawnEquip". It is a custom function specific to ReGameDLL_CS, the standard CS has not the code implemented in a standalone function (but in the "CHalfLifeMultiplay::PlayerSpawn" game function).
 	 * Format (callback): (iClientID, bool:bAddDefault, bool:bEquipGame).
@@ -4264,6 +4715,14 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.21.
 	 * Description: Called when a client emits a "pain sound" on damage reception.
 	 * Information: This is called in the "CBasePlayer::TakeDamage" game function. */
+
+	/* Function name (API): "CBasePlayer::PlayerDeathThink".
+	 * Function name (real): "CBasePlayer::PlayerDeathThink".
+	 * Format (callback): (iClientID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a client died in order to trigger some events related to his death (spawn corpse, check win conditions, respawn him, etc.).
+	 * Information: This is called in some death functions ("CBasePlayer::<Disappear|Killed>"). */
 
 	/* Function name (API): "CBasePlayer::PostThink".
 	 * Function name (real): "CBasePlayer::PostThink".
@@ -4474,6 +4933,32 @@ enum ReAPI_HFT {
 	 * API required (ReGameDLL_CS): v5.12.
 	 * Description: Called when the shotgun (M3/XM1014) weapon entity of a client is reloaded.
 	 * Information: This is called in the "C<M3|CXM1014>::Reload" game functions. */
+
+	/* Function name (API): "CBasePlayerWeapon::ItemPostFrame".
+	 * Function name (real): "CBasePlayerWeapon::ItemPostFrame".
+	 * Format (callback): (iWeaponEntityID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the weapon entity of a client is "thinking" (on every client frame).
+	 * Information: This is the main function that handles actions of the inventory items (primary attack, secondary attack, reload, empty sound, etc.). */
+
+	/* Function name (API): "CBasePlayerWeapon::KickBack".
+	 * Function name (real): "CBasePlayerWeapon::KickBack".
+	 * Format (callback): (iWeaponEntityID, Float:flUpBase, Float:flLateralBase, Float:flUpModifier, Float:flLateralModifier, Float:flUpMax, Float:flLateralMax, iDirectionChange).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the weapon entity of a client is shooting is order to apply some punch angles (crosshair recoil).
+	 * Information: This is called in the "C*::*Fire" game functions. */
+
+	/* Function name (API): "CBasePlayerWeapon::SendWeaponAnim".
+	 * Function name (real): "CBasePlayerWeapon::SendWeaponAnim".
+	 * Format (callback):
+	 *   (iWeaponEntityID, iAnimationType, iSkipLocal).
+	 *
+	 *   Note: The "iSkipLocal" variable is to skip the animation playing in case of the client has prediction (setinfo "cl_lw") enabled.
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the weapon entity of a client is playing an animation to him. */
 
 
 	/***************************** CLASS -> CGib *****************************/
@@ -4702,8 +5187,8 @@ enum ReAPI_HFT {
 	/* Function name (API): "CSGameRules::GiveC4". It is a renaming of an actual function.
 	 * Function name (real): "CHalfLifeMultiplay::GiveC4".
 	 * Format (callback): ().
-	 * Return type: None.
-	 * API required (ReGameDLL_CS): v5.0.
+	 * Return type: Entity's CBasePlayer pointer (ID of the client who received the C4).
+	 * API required (ReGameDLL_CS): v5.25 (since the implementation of the return value).
 	 * Description: Called when the game gives the C4 to a client. */
 
 	/* Function name (API): "CSGameRules::GoToIntermission". It is a renaming of an actual function.
@@ -4729,6 +5214,16 @@ enum ReAPI_HFT {
 	 * Return type: None.
 	 * API required (ReGameDLL_CS): v5.0.
 	 * Description: Called when the new round starts (right after the end of the freeze time, when the clients can start moving...). */
+
+	/* Function name (API): "CSGameRules::PlayerGotWeapon". It is a renaming of an actual function.
+	 * Function name (real): "CHalfLifeMultiplay::PlayerGotWeapon".
+	 * Format (callback): (iClientID, iInventoryItemEntityID).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the game notifies a client got a weapon in his inventory.
+	 * Informationss:
+	 *   This is called in the "CBasePlayer::AddPlayerItem" game function.
+	 *   The content of that game function is empty (can just only be used as a notification, or, to implement your own when needed). */
 
 	/* Function name (API): "CSGameRules::PlayerKilled". It is a renaming of an actual function.
 	 * Function name (real): "CHalfLifeMultiplay::PlayerKilled".
@@ -4765,6 +5260,14 @@ enum ReAPI_HFT {
 	 *   Called when the round is restarted (on each new round).
 	 *   Using this function is good in order to replace the "HLTV" message used for detecting new round (with a PRE call type). */
 
+	/* Function name (API): "CSGameRules::SendDeathMessage". It is a custom function specific to ReGameDLL_CS.
+	 * Function name (real): "CHalfLifeMultiplay::SendDeathMessage".
+	 * Format (callback): (iKillerID, iVictimID, iAssisterID, iInflictorID, const szKillerWeaponName[], DeathMessageFlags:iDeathMessageFlags, KillRarity:iRarityOfKill).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when a death message is sent.
+	 * Information: This is called in the "CHalfLifeMultiplay::DeathNotice" game function. */
+
 	/* Function name (API): "CSGameRules::ServerDeactivate". It is a renaming of an actual function.
 	 * Function name (real): "CHalfLifeMultiplay::ServerDeactivate".
 	 * Format (callback): ().
@@ -4774,6 +5277,43 @@ enum ReAPI_HFT {
 	 * Informations:
 	 *   This is called in the "pfnServerDeactivate" DLL API function.
 	 *   This is called right after the "plugin_end" hook. */
+
+	/* Function name (API): "CSGameRules::TeamFull". It is a renaming of an actual function.
+	 * Function name (real): "CHalfLifeMultiplay::TeamFull".
+	 * Format (callback): (iTeamID).
+	 * Return type: Integer (0 on refusal, 1 on agreement).
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the game checks if a team is full (usually when a client selects a team or for the bots).
+	 * Information: This performs a comparison between the amount of clients in a team vs the amount of spawns available for it (deals with 4 CHalfLifeMultiplay's members). */
+
+	/* Function name (API): "CSGameRules::TeamStacked". It is a renaming of an actual function.
+	 * Function name (real): "CHalfLifeMultiplay::TeamStacked".
+	 * Format (callback): (iNewTeamID, iCurrentTeamID).
+	 * Return type: Integer (0 on refusal, 1 on agreement).
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the game checks if a team is stacked (usually when a client selects a team or for the bots).
+	 * Information: This performs a comparison between the amount of clients in a team vs the ones in the opposite team and with the CVar "mp_limitteams" (deals with 3 CHalfLifeMultiplay's members). */
+
+	/* Function name (API): "CSGameRules::Think". It is a renaming of an actual function.
+	 * Function name (real): "CHalfLifeMultiplay::Think".
+	 * Format (callback): ().
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when the game rules are thinking (major function called on each server frame). */
+
+
+	/********************** CLASS GROUP -> CBotManager ***********************/
+
+	/* Function name (API): "CBotManager::OnEvent".
+	 * Function name (real): "CBotManager::OnEvent".
+	 * Format (callback):
+	 *   (GameEventType:iEventTypeID, iEntityID, iOtherID).
+	 *
+	 *   Note: The "iEventTypeID" variable is a "EVENT_*" from "reapi_const.inc" (above).
+	 * Return type: None.
+	 * API required (ReGameDLL_CS): v5.26.
+	 * Description: Called when an event related to the bots occurs in the game.
+	 * Information: Some events have invalid/null entities. */
 
 
 	/**************************************************************************
