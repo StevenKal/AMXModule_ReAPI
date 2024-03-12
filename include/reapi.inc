@@ -1,6 +1,6 @@
 /*
  * ReAPI functions (natives).
- * Version: 1.10.0 (AMX API v9 [AMX Mod v2010.1+]).
+ * Version: 1.11.0 (AMX API v9 [AMX Mod v2010.1+]).
  *
  * Copyright (C) - AMX Mod Dev.
  * This file is provided as is (no warranties).
